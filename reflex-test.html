@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Quick Reflex Game ⚡</title>
+  <title>Quick REFLEX Game ⚡</title>
   <meta name="description" content="Play Reflex Game online. Test your reaction speed!">
   <style>
     body {
@@ -34,9 +34,7 @@
       transition: background 0.3s;
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
-    .active {
-      background: #ff4d4d;
-    }
+    .active { background: #ff4d4d; }
     #stats {
       margin-top: 20px;
       font-size: 1.2em;
@@ -54,9 +52,7 @@
       cursor: pointer;
       transition: 0.3s;
     }
-    button:hover {
-      transform: scale(1.05);
-    }
+    button:hover { transform: scale(1.05); }
     .start { background: #4CAF50; color: white; }
     .pause { background: #f39c12; color: white; }
     .back { background: lightblue; color: black; }
@@ -142,13 +138,9 @@
           let average = Math.round(totalReaction / reactionCount);
           document.getElementById("average").innerText = average;
 
-          if (reaction < 200) {
-            score += 2; streak++;
-          } else if (reaction <= 800) {
-            score += 1; streak++;
-          } else {
-            streak = 0;
-          }
+          if (reaction < 200) { score += 2; streak++; }
+          else if (reaction <= 800) { score += 1; streak++; }
+          else { streak = 0; }
 
           document.getElementById("score").innerText = score;
           document.getElementById("streak").innerText = streak;
@@ -182,23 +174,17 @@
       activateRandomCell();
     }
 
-    function pauseGame() {
-      paused = true;
-    }
+    function pauseGame() { paused = true; }
 
     function resetGame() {
-      score = 0;
-      streak = 0;
-      bestReaction = null;
-      totalReaction = 0;
-      reactionCount = 0;
+      score = 0; streak = 0; bestReaction = null;
+      totalReaction = 0; reactionCount = 0;
       document.getElementById("score").innerText = 0;
       document.getElementById("streak").innerText = 0;
       document.getElementById("last").innerText = 0;
       document.getElementById("best").innerText = "--";
       document.getElementById("average").innerText = "--";
-      gameRunning = false;
-      paused = false;
+      gameRunning = false; paused = false;
       if (activeCell) activeCell.classList.remove("active");
     }
   </script>
