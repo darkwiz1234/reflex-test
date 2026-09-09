@@ -49,6 +49,21 @@
       color: #00f2fe;
       transform: scale(1.1);
     }
+    #controls {
+      margin-top: 10px;
+    }
+    #controls button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #f39c12;
+      color: white;
+    }
+    #controls button:hover {
+      transform: scale(1.05);
+    }
   </style>
 </head>
 <body>
@@ -60,18 +75,25 @@
     <div id="scoreboard">
       Score: <span id="score">0</span> | Highest: <span id="highscore">0</span>
     </div>
+    <div id="controls">
+      <button onclick="pauseGame()">Pause</button>
+    </div>
   </div>
 
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    let player = { x: 50, y: 250, width: 30, height: 30, dy: 0, jump: false };
+    let player = { x: 50, y: canvas.height - 30, width: 30, height: 30, dy: 0, jump: false };
     let gravity = 0.8;
     let obstacles = [];
     let score = 0;
     let highscore = localStorage.getItem("highscore") || 0;
     document.getElementById("highscore").innerText = highscore;
+
+    let gameRunning = false;
+    let paused = false;
+    let gameOver = false;
 
     function drawPlayer() {
       ctx.fillStyle = "#00f2fe";
@@ -96,6 +118,8 @@
     }
 
     function update() {
+      if(!gameRunning || paused) return;
+
       ctx.clearRect(0,0,canvas.width,canvas.height);
 
       // Player physics
@@ -105,7 +129,10 @@
       }
       player.y += player.dy;
       player.dy += gravity;
-      if(player.y > 250) { player.y = 250; player.dy = 0; }
+      if(player.y > canvas.height - player.height) {
+        player.y = canvas.height - player.height;
+        player.dy = 0;
+      }
 
       // Obstacles
       obstacles.forEach(o => o.x -= 5);
@@ -120,11 +147,11 @@
         }
       }
 
-      // Collision detection (simple bounding box)
+      // Collision detection
       obstacles.forEach(o => {
         if(player.x < o.x + o.width && player.x + player.width > o.x &&
            player.y < o.y + o.height && player.y + player.height > o.y) {
-          resetGame();
+          endGame();
         }
       });
 
@@ -133,45 +160,72 @@
       requestAnimationFrame(update);
     }
 
+    function pauseGame() {
+      paused = !paused;
+      if(!paused && gameRunning) update();
+    }
+
+    function endGame() {
+      gameRunning = false;
+      gameOver = true;
+      ctx.fillStyle = "white";
+      ctx.font = "24px Arial";
+      ctx.fillText("Game Over - Click to Restart", canvas.width/2 - 150, canvas.height/2);
+    }
+
+    function startGame() {
+      score = 0;
+      document.getElementById("score").innerText = score;
+      obstacles = [];
+      player.y = canvas.height - player.height;
+      player.dy = 0;
+      gameRunning = true;
+      paused = false;
+      gameOver = false;
+      spawnObstacle();
+      update();
+    }
+
     function spawnObstacle() {
       let rand = Math.random();
       if(rand < 0.5) {
-        // Block
-        let height = Math.random() * 50 + 20;
+        // Block (always from ground up)
+        let height = Math.random() * 50 + 40;
         obstacles.push({ 
           x: canvas.width, 
-          y: 300 - height, 
-          width: 20, 
+          y: canvas.height - height, 
+          width: 30, 
           height: height, 
           type: "block" 
         });
       } else {
-        // Spike
+        // Spike (fixed size, sits on ground)
         obstacles.push({ 
           x: canvas.width, 
-          y: 280, 
+          y: canvas.height - 30, 
           width: 30, 
-          height: 20, 
+          height: 30, 
           type: "spike" 
         });
       }
-      setTimeout(spawnObstacle, 2000);
-    }
-
-    function resetGame() {
-      score = 0;
-      document.getElementById("score").innerText = score;
-      obstacles = [];
-      player.y = 250;
-      player.dy = 0;
+      if(gameRunning) setTimeout(spawnObstacle, 2000);
     }
 
     document.addEventListener("keydown", e => {
-      if(e.code === "Space" && player.y >= 250) player.jump = true;
+      if(e.code === "Space" && player.y >= canvas.height - player.height && gameRunning) {
+        player.jump = true;
+      }
     });
 
-    spawnObstacle();
-    update();
+    // Restart when clicking canvas after game over
+    canvas.addEventListener("click", () => {
+      if(gameOver) startGame();
+    });
+
+    // Start game on first click
+    canvas.addEventListener("click", () => {
+      if(!gameRunning && !gameOver) startGame();
+    });
   </script>
 </body>
 </html>
