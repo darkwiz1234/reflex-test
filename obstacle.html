@@ -74,6 +74,7 @@
     <div id="scoreboard">
       Score: <span id="score">0</span> | Highest: <span id="highscore">0</span>
     </div>
+    <!-- ✅ Controls now inside gameBox -->
     <div id="controls">
       <button id="pauseBtn" onclick="pauseGame()">Pause</button>
       <button id="resetBtn" onclick="resetGame()">Reset</button>
@@ -122,7 +123,6 @@
 
       ctx.clearRect(0,0,canvas.width,canvas.height);
 
-      // Player physics
       if(player.jump) {
         player.dy = -12;
         player.jump = false;
@@ -134,7 +134,6 @@
         player.dy = 0;
       }
 
-      // Obstacles
       obstacles.forEach(o => o.x -= 5);
       if(obstacles.length && obstacles[0].x + obstacles[0].width < 0) {
         obstacles.shift();
@@ -147,7 +146,6 @@
         }
       }
 
-      // Collision detection
       obstacles.forEach(o => {
         if(player.x < o.x + o.width && player.x + player.width > o.x &&
            player.y < o.y + o.height && player.y + player.height > o.y) {
@@ -235,7 +233,6 @@
       else if(!gameRunning && !gameOver) startGame();
     });
 
-    // Show initial message
     resetGame();
   </script>
 </body>
