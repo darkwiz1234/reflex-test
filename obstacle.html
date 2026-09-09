@@ -58,12 +58,11 @@
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      background: #f39c12;
-      color: white;
+      margin: 5px;
     }
-    #controls button:hover {
-      transform: scale(1.05);
-    }
+    #pauseBtn { background: #f39c12; color: white; }
+    #resetBtn { background: #4CAF50; color: white; }
+    #controls button:hover { transform: scale(1.05); }
   </style>
 </head>
 <body>
@@ -76,7 +75,8 @@
       Score: <span id="score">0</span> | Highest: <span id="highscore">0</span>
     </div>
     <div id="controls">
-      <button onclick="pauseGame()">Pause</button>
+      <button id="pauseBtn" onclick="pauseGame()">Pause</button>
+      <button id="resetBtn" onclick="resetGame()">Reset</button>
     </div>
   </div>
 
@@ -108,9 +108,9 @@
         } else if(o.type === "spike") {
           ctx.fillStyle = "#ffcc00";
           ctx.beginPath();
-          ctx.moveTo(o.x, o.y + o.height);          // bottom left
-          ctx.lineTo(o.x + o.width/2, o.y);         // top point
-          ctx.lineTo(o.x + o.width, o.y + o.height);// bottom right
+          ctx.moveTo(o.x, o.y + o.height);
+          ctx.lineTo(o.x + o.width/2, o.y);
+          ctx.lineTo(o.x + o.width, o.y + o.height);
           ctx.closePath();
           ctx.fill();
         }
@@ -186,10 +186,24 @@
       update();
     }
 
+    function resetGame() {
+      score = 0;
+      document.getElementById("score").innerText = score;
+      obstacles = [];
+      player.y = canvas.height - player.height;
+      player.dy = 0;
+      gameRunning = false;
+      paused = false;
+      gameOver = false;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = "white";
+      ctx.font = "20px Arial";
+      ctx.fillText("Click to Start", canvas.width/2 - 60, canvas.height/2);
+    }
+
     function spawnObstacle() {
       let rand = Math.random();
       if(rand < 0.5) {
-        // Block (always from ground up)
         let height = Math.random() * 50 + 40;
         obstacles.push({ 
           x: canvas.width, 
@@ -199,7 +213,6 @@
           type: "block" 
         });
       } else {
-        // Spike (fixed size, sits on ground)
         obstacles.push({ 
           x: canvas.width, 
           y: canvas.height - 30, 
@@ -217,15 +230,15 @@
       }
     });
 
-    // Restart when clicking canvas after game over
     canvas.addEventListener("click", () => {
       if(gameOver) startGame();
+      else if(!gameRunning && !gameOver) startGame();
     });
 
-    // Start game on first click
-    canvas.addEventListener("click", () => {
-      if(!gameRunning && !gameOver) startGame();
-    });
+    // Show initial message
+    resetGame();
   </script>
 </body>
 </html>
+
+   
