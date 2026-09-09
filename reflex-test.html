@@ -6,7 +6,49 @@
 <title>Reflex Game - Test Your Speed</title>
 <meta name="description" content="Play Reflex Game online. Test your reaction speed with this fun browser-based challenge.">
    
- body {
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background: linear-gradient(to right, #ffecd2, #fcb69f);
+  color: #333;
+}
+h1 {
+  margin-top: 20px;
+  font-size: 2.5em;
+  color: #222;
+}
+#stats {
+  margin-top: 20px;
+  font-size: 1.2em;
+  background: #fff;
+  padding: 10px;
+  border-radius: 10px;
+  display: inline-block;
+}
+button {
+  margin: 10px;
+  padding: 15px 30px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+button:hover {
+  transform: scale(1.05);
+}
+#info {
+  margin-top: 40px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 10px;
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
+}
+ 
+ {
       font-family: Arial, sans-serif;
       text-align: center;
       background: #ffe0cc;
@@ -74,7 +116,7 @@
 
   <button onclick="startGame()">Start</button>
   <button class="pause" onclick="pauseGame()">Pause</button>
-  <button class="stop" onclick="stopGame()">Stop</button>
+  <button onclick="location.href='index.html'" style="background-color: lightblue;">Back</button>
   <button onclick="resetGame()">Reset</button>
 
   <!-- Sound effect -->
@@ -187,6 +229,19 @@
       document.getElementById("average").innerText = "--";
       stopGame();
     }
+<div id="info">
+  <h2>About Reflex Test</h2>
+  <p>
+    The Reflex Test game measures your reaction speed by tracking how quickly you respond to visual cues. 
+    Reaction time is a key indicator of how efficiently your brain and nervous system process information. 
+    On average, human reaction time to visual stimuli is around 250 milliseconds, though athletes and gamers 
+    often train to reduce this to under 200 ms. Faster reflexes can improve performance in sports, driving, 
+    and everyday tasks. Studies show that consistent practice with reaction games can enhance focus, 
+    hand-eye coordination, and cognitive processing speed. This game provides a fun way to challenge yourself, 
+    track your progress, and see how your reflexes compare over time.
+  </p>
+</div>
+
   </script>
 </body>
 </html>
