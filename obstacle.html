@@ -1,73 +1,177 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Obstacle Course</title>
+  <title>OBJECT RUN 🏃</title>
   <style>
-    canvas { background: #eee; display: block; margin: auto; }
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: linear-gradient(to bottom, #add8e6, #00008b);
+      margin: 0;
+      padding: 0;
+      color: #fff;
+    }
+    .title {
+      font-size: 3em;
+      font-weight: bold;
+      margin: 20px 0;
+      text-shadow: 3px 3px 8px rgba(0,0,0,0.5);
+    }
+    #gameBox {
+      display: inline-block;
+      background: #111;
+      border: 4px solid #00f2fe;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+      padding: 10px;
+    }
+    canvas {
+      background: #222;
+      display: block;
+      margin: auto;
+      border-radius: 8px;
+    }
+    #scoreboard {
+      margin-top: 15px;
+      font-size: 1.2em;
+    }
+    .backBtn {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      font-size: 2em;
+      background: none;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+    }
+    .backBtn:hover {
+      color: #00f2fe;
+      transform: scale(1.1);
+    }
   </style>
 </head>
 <body>
-  <h2>Obstacle Course Game</h2>
-  <canvas id="gameCanvas" width="600" height="200"></canvas>
+  <button class="backBtn" onclick="location.href='index.html'">←</button>
+  <div class="title">OBJECT RUN 🏃</div>
+
+  <div id="gameBox">
+    <canvas id="gameCanvas" width="600" height="300"></canvas>
+    <div id="scoreboard">
+      Score: <span id="score">0</span> | Highest: <span id="highscore">0</span>
+    </div>
+  </div>
+
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    let player = { x: 50, y: 150, width: 20, height: 20, dy: 0, jump: false };
+    let player = { x: 50, y: 250, width: 30, height: 30, dy: 0, jump: false };
+    let gravity = 0.8;
     let obstacles = [];
-    let gravity = 2;
+    let score = 0;
+    let highscore = localStorage.getItem("highscore") || 0;
+    document.getElementById("highscore").innerText = highscore;
 
     function drawPlayer() {
-      ctx.fillStyle = "blue";
+      ctx.fillStyle = "#00f2fe";
       ctx.fillRect(player.x, player.y, player.width, player.height);
     }
 
     function drawObstacles() {
-      ctx.fillStyle = "red";
-      obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.width, o.height));
+      obstacles.forEach(o => {
+        if(o.type === "block") {
+          ctx.fillStyle = "#ff4d4d";
+          ctx.fillRect(o.x, o.y, o.width, o.height);
+        } else if(o.type === "spike") {
+          ctx.fillStyle = "#ffcc00";
+          ctx.beginPath();
+          ctx.moveTo(o.x, o.y + o.height);          // bottom left
+          ctx.lineTo(o.x + o.width/2, o.y);         // top point
+          ctx.lineTo(o.x + o.width, o.y + o.height);// bottom right
+          ctx.closePath();
+          ctx.fill();
+        }
+      });
     }
 
     function update() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
 
-      // Player jump
-      if (player.jump) {
-        player.dy = -20;
+      // Player physics
+      if(player.jump) {
+        player.dy = -12;
         player.jump = false;
       }
       player.y += player.dy;
       player.dy += gravity;
+      if(player.y > 250) { player.y = 250; player.dy = 0; }
 
-      if (player.y > 150) { player.y = 150; player.dy = 0; }
-
-      // Move obstacles
+      // Obstacles
       obstacles.forEach(o => o.x -= 5);
+      if(obstacles.length && obstacles[0].x + obstacles[0].width < 0) {
+        obstacles.shift();
+        score++;
+        document.getElementById("score").innerText = score;
+        if(score > highscore) {
+          highscore = score;
+          localStorage.setItem("highscore", highscore);
+          document.getElementById("highscore").innerText = highscore;
+        }
+      }
 
-      // Collision check
+      // Collision detection (simple bounding box)
       obstacles.forEach(o => {
-        if (player.x < o.x + o.width &&
-            player.x + player.width > o.x &&
-            player.y < o.y + o.height &&
-            player.y + player.height > o.y) {
-          alert("Game Over!");
-          obstacles = [];
+        if(player.x < o.x + o.width && player.x + player.width > o.x &&
+           player.y < o.y + o.height && player.y + player.height > o.y) {
+          resetGame();
         }
       });
 
       drawPlayer();
       drawObstacles();
+      requestAnimationFrame(update);
     }
 
     function spawnObstacle() {
-      obstacles.push({ x: 600, y: 150, width: 20, height: 20 });
+      let rand = Math.random();
+      if(rand < 0.5) {
+        // Block
+        let height = Math.random() * 50 + 20;
+        obstacles.push({ 
+          x: canvas.width, 
+          y: 300 - height, 
+          width: 20, 
+          height: height, 
+          type: "block" 
+        });
+      } else {
+        // Spike
+        obstacles.push({ 
+          x: canvas.width, 
+          y: 280, 
+          width: 30, 
+          height: 20, 
+          type: "spike" 
+        });
+      }
+      setTimeout(spawnObstacle, 2000);
     }
 
-    setInterval(update, 50);
-    setInterval(spawnObstacle, 2000);
+    function resetGame() {
+      score = 0;
+      document.getElementById("score").innerText = score;
+      obstacles = [];
+      player.y = 250;
+      player.dy = 0;
+    }
 
-    window.addEventListener("keydown", e => {
-      if (e.code === "Space") player.jump = true;
+    document.addEventListener("keydown", e => {
+      if(e.code === "Space" && player.y >= 250) player.jump = true;
     });
+
+    spawnObstacle();
+    update();
   </script>
 </body>
 </html>
