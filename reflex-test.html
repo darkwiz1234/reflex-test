@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Quick Reflex Game</title>
+  <style>
+<title>Reflex Game - Test Your Speed</title>
+<meta name="description" content="Play Reflex Game online. Test your reaction speed with this fun browser-based challenge.">
+   
+ body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #ffe0cc;
+      color: #222;
+    }
+    h2 {
+      margin-top: 20px;
+      color: #333;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      gap: 10px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+    .cell {
+      width: 100px;
+      height: 100px;
+      background: #eee;
+      border-radius: 8px;
+      transition: background 0.3s;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .active {
+      background: #ff4d4d;
+    }
+    .stats {
+      margin-top: 15px;
+      font-size: 18px;
+    }
+    .stats span {
+      font-weight: bold;
+      color: #111;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      background: #4CAF50;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .stop { background: #e74c3c; }
+    .pause { background: #f39c12; }
+  </style>
+</head>
+<body>
+  <h2>⚡ Quick Reflex Game ⚡</h2>
+  <div class="grid" id="grid"></div>
+
+  <div class="stats">
+    <p>Score: <span id="score">0</span></p>
+    <p>Streak: <span id="streak">0</span></p>
+    <p>Last Reaction: <span id="last">0</span> ms</p>
+    <p>Best Reaction: <span id="best">--</span> ms</p>
+    <p>Average Reaction: <span id="average">--</span> ms</p>
+  </div>
+
+  <button onclick="startGame()">Start</button>
+  <button class="pause" onclick="pauseGame()">Pause</button>
+  <button class="stop" onclick="stopGame()">Stop</button>
+  <button onclick="resetGame()">Reset</button>
+
+  <!-- Sound effect -->
+  <audio id="ding" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio>
+
+  <!-- ✅ Script moved to bottom -->
+  <script>
+    let score = 0;
+    let streak = 0;
+    let activeCell = null;
+    let startTime = 0;
+    let bestReaction = null;
+    let totalReaction = 0;
+    let reactionCount = 0;
+    let gameRunning = false;
+    let paused = false;
+
+    const grid = document.getElementById("grid");
+    // Create the 3x3 grid cells
+    for(let i=0; i<9; i++) {
+      const cell = document.createElement("div");
+      cell.classList.add("cell");
+      cell.addEventListener("click", () => {
+        if(cell === activeCell && gameRunning && !paused) {
+          let reaction = Date.now() - startTime;
+          document.getElementById("last").innerText = reaction;
+
+          if(bestReaction === null || reaction < bestReaction) {
+            bestReaction = reaction;
+            document.getElementById("best").innerText = bestReaction;
+          }
+
+          totalReaction += reaction;
+          reactionCount++;
+          let average = Math.round(totalReaction / reactionCount);
+          document.getElementById("average").innerText = average;
+
+          if(reaction < 200) {
+            score += 2; // bonus
+            streak++;
+          } else if(reaction <= 800) {
+            score += 1;
+            streak++;
+          } else {
+            streak = 0; // break streak
+          }
+
+          document.getElementById("score").innerText = score;
+          document.getElementById("streak").innerText = streak;
+
+          // Play sound effect
+          let ding = document.getElementById("ding");
+          ding.play().catch(err => console.log("Playback blocked:", err));
+
+          cell.classList.remove("active");
+          activateRandomCell();
+        }
+      });
+      grid.appendChild(cell);
+    }
+
+    function activateRandomCell() {
+      if(!gameRunning || paused) return;
+      const cells = document.querySelectorAll(".cell");
+      const random = Math.floor(Math.random() * cells.length);
+      const delay = (Math.floor(Math.random() * 3) + 1) * 1000;
+
+      setTimeout(() => {
+        if(gameRunning && !paused) {
+          if(activeCell) activeCell.classList.remove("active");
+          activeCell = cells[random];
+          activeCell.classList.add("active");
+          startTime = Date.now();
+        }
+      }, delay);
+    }
+
+    function startGame() {
+      gameRunning = true;
+      paused = false;
+      // Unlock audio on Start
+      let ding = document.getElementById("ding");
+      ding.play().then(() => {
+        ding.pause();
+        ding.currentTime = 0;
+      }).catch(() => {});
+      activateRandomCell();
+    }
+
+    function pauseGame() {
+      paused = true;
+    }
+
+    function stopGame() {
+      gameRunning = false;
+      paused = false;
+      if(activeCell) activeCell.classList.remove("active");
+    }
+
+    function resetGame() {
+      score = 0;
+      streak = 0;
+      bestReaction = null;
+      totalReaction = 0;
+      reactionCount = 0;
+      document.getElementById("score").innerText = 0;
+      document.getElementById("streak").innerText = 0;
+      document.getElementById("last").innerText = 0;
+      document.getElementById("best").innerText = "--";
+      document.getElementById("average").innerText = "--";
+      stopGame();
+    }
+  </script>
+</body>
+</html>

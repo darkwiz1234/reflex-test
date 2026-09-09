@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Obstacle Course</title>
+  <style>
+    canvas { background: #eee; display: block; margin: auto; }
+  </style>
+</head>
+<body>
+  <h2>Obstacle Course Game</h2>
+  <canvas id="gameCanvas" width="600" height="200"></canvas>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let player = { x: 50, y: 150, width: 20, height: 20, dy: 0, jump: false };
+    let obstacles = [];
+    let gravity = 2;
+
+    function drawPlayer() {
+      ctx.fillStyle = "blue";
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+    }
+
+    function drawObstacles() {
+      ctx.fillStyle = "red";
+      obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.width, o.height));
+    }
+
+    function update() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Player jump
+      if (player.jump) {
+        player.dy = -20;
+        player.jump = false;
+      }
+      player.y += player.dy;
+      player.dy += gravity;
+
+      if (player.y > 150) { player.y = 150; player.dy = 0; }
+
+      // Move obstacles
+      obstacles.forEach(o => o.x -= 5);
+
+      // Collision check
+      obstacles.forEach(o => {
+        if (player.x < o.x + o.width &&
+            player.x + player.width > o.x &&
+            player.y < o.y + o.height &&
+            player.y + player.height > o.y) {
+          alert("Game Over!");
+          obstacles = [];
+        }
+      });
+
+      drawPlayer();
+      drawObstacles();
+    }
+
+    function spawnObstacle() {
+      obstacles.push({ x: 600, y: 150, width: 20, height: 20 });
+    }
+
+    setInterval(update, 50);
+    setInterval(spawnObstacle, 2000);
+
+    window.addEventListener("keydown", e => {
+      if (e.code === "Space") player.jump = true;
+    });
+  </script>
+</body>
+</html>
