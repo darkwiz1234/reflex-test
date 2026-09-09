@@ -1,39 +1,69 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Game Hub</title>
+  <title>Reflex Hub 🎮</title>
+  <meta name="description" content="Game Hub for Reflex Test and Obstacle Course">
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
       background: linear-gradient(to right, #4facfe, #00f2fe);
-      color: white;
+      color: #fff;
+      margin: 0;
+      padding: 0;
     }
-    h1 { margin-top: 50px; }
+    h1 {
+      margin-top: 60px;
+      font-size: 3em;
+      text-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+    }
     .menu {
       margin-top: 100px;
     }
     button {
       margin: 20px;
-      padding: 20px 40px;
-      font-size: 18px;
+      padding: 20px 50px;
+      font-size: 20px;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       cursor: pointer;
       background-color: #222;
       color: #fff;
       transition: 0.3s;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     }
     button:hover {
       background-color: #555;
+      transform: scale(1.05);
+    }
+    #info {
+      margin-top: 80px;
+      padding: 20px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      width: 80%;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+      font-size: 1.1em;
     }
   </style>
 </head>
 <body>
-  <h1>Welcome to Reflex Hub</h1>
+  <h1>Welcome to Reflex Hub 🎮</h1>
   <div class="menu">
-    <button onclick="location.href='reflex-test.html'">Quick Reflex Game</button>
-    <button onclick="location.href='obstacle.html'">Obstacle Course Game</button>
+    <button onclick="location.href='reflex-test.html'">Quick Reflex Game ⚡</button>
+    <button onclick="location.href='obstacle.html'">Obstacle Course Game 🏃</button>
+  </div>
+
+  <div id="info">
+    <p>
+      Reflex Hub is your mini‑game launcher! Choose between the Quick Reflex Game to test your reaction speed,
+      or the Obstacle Course Game to challenge your timing and coordination. More games can be added here in the future —
+      just drop new HTML files into the repo and link them with buttons. This hub is designed to be simple, stylish,
+      and fun, giving you a central place to explore your creations.
+    </p>
   </div>
 </body>
 </html>
+
