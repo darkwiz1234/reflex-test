@@ -65,8 +65,9 @@
     </div>
   </div>
 
-  <!-- Collision sound -->
+  <!-- Collision sound + Background music -->
   <audio id="hitSound" src="collision.mp3"></audio>
+  <audio id="bgMusic" src="music.mp3" loop></audio>
 
   <script>
     const canvas = document.getElementById("gameCanvas");
@@ -104,7 +105,6 @@
         }
       });
     }
-
     function updateTheme() {
       if(score >= 100) {
         document.body.style.background = "linear-gradient(to bottom, gold, darkorange)";
@@ -123,7 +123,6 @@
 
     function update() {
       if(!gameRunning || paused) return;
-
       ctx.clearRect(0,0,canvas.width,canvas.height);
 
       if(player.jump) {
@@ -153,16 +152,13 @@
       // Collision detection with bounce
       obstacles.forEach(o => {
         if(o.type === "block") {
-          // Bounce on top
           if(player.y + player.height <= o.y + 10 &&
              player.x + player.width > o.x && player.x < o.x + o.width &&
              player.dy >= 0) {
             player.y = o.y - player.height;
             player.dy = 0;
-          }
-          // Side collision = death
-          else if(player.x < o.x + o.width && player.x + player.width > o.x &&
-                  player.y < o.y + o.height && player.y + player.height > o.y) {
+          } else if(player.x < o.x + o.width && player.x + player.width > o.x &&
+                    player.y < o.y + o.height && player.y + player.height > o.y) {
             endGame();
           }
         } else if(o.type === "spike") {
@@ -184,7 +180,8 @@
     }
 
     function endGame() {
-      document.getElementById("hitSound").play(); // play collision sound
+      document.getElementById("hitSound").play().catch(e => {});
+      document.getElementById("bgMusic").pause();
       gameRunning = false;
       gameOver = true;
       ctx.fillStyle = "white";
@@ -201,6 +198,7 @@
       gameRunning = true;
       paused = false;
       gameOver = false;
+      document.getElementById("bgMusic").play().catch(e => {});
       spawnObstacle();
       update();
     }
@@ -211,14 +209,14 @@
       document.getElementById("score").innerText = score;
       document.getElementById("highscore").innerText = highscore;
       localStorage.setItem("highscore", highscore);
-
       obstacles = [];
       player.y = canvas.height - player.height;
       player.dy = 0;
       gameRunning = false;
       paused = false;
       gameOver = false;
-
+      document.getElementById("bgMusic").pause();
+      document.getElementById("bgMusic").currentTime = 0;
       ctx.clearRect(0,0,canvas.width,canvas.height);
       ctx.fillStyle = "white";
       ctx.font = "20px Arial";
@@ -228,42 +226,8 @@
 
     function spawnObstacle() {
       let rand = Math.random();
-      if(rand < 0.5) {
-        let height = Math.random() * 50 + 40;
-        obstacles.push({ 
-          x: canvas.width, 
-          y: canvas.height - height, 
-          width: 30, 
-          height: height, 
-          type: "block" 
-        });
-      } else {
-        obstacles.push({ 
-          x: canvas.width, 
-          y: canvas.height - 30, 
-          width: 30, 
-          height: 30, 
-          type: "spike" 
-        });
-      }
-      if(gameRunning) setTimeout(spawnObstacle, 2000);
-    }
-
-    document.addEventListener("keydown", e => {
-      if(e.code === "Space" && player.y >= canvas.height - player.height && gameRunning) {
-        player.jump = true;
-      }
-    });
-
-       canvas.addEventListener("click", () => {
-      if(gameOver) startGame();
-      else if(!gameRunning && !gameOver) startGame();
-    });
-
-    // Show initial "Click to Start" message
-    resetGame();
-  </script>
-</body>
-</html>
-
+      if(rand < 0.25) {
+        obstacles.push({ x: canvas.width, y: canvas.height - 40, width: 40, height: 40, type: "block" });
+      } else if(rand < 0.5) {
+        obstacles.push({ x
 
