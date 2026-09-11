@@ -230,4 +230,56 @@
         obstacles.push({ x: canvas.width, y: canvas.height - 40, width: 40, height: 40, type: "block" });
       } else if(rand < 0.5) {
         obstacles.push({ x
+      } else if(rand < 0.5) {
+        // Ramp block
+        obstacles.push({ 
+          x: canvas.width, 
+          y: canvas.height - 80, 
+          width: 50, 
+          height: 80, 
+          type: "block" 
+        });
+      } else if(rand < 0.75) {
+        // Floating block
+        obstacles.push({ 
+          x: canvas.width, 
+          y: canvas.height - 120, 
+          width: 60, 
+          height: 30, 
+          type: "block" 
+        });
+      } else {
+        // Spike
+        obstacles.push({ 
+          x: canvas.width, 
+          y: canvas.height - 30, 
+          width: 30, 
+          height: 30, 
+          type: "spike" 
+        });
+      }
+
+      if(gameRunning) {
+        let delay = Math.random() * 1000 + 2000; // 2000–3000 ms
+        setTimeout(spawnObstacle, delay);
+      }
+    }
+
+    document.addEventListener("keydown", e => {
+      if(e.code === "Space" && player.y >= canvas.height - player.height && gameRunning) {
+        player.jump = true;
+      }
+    });
+
+    canvas.addEventListener("click", () => {
+      if(gameOver) startGame();
+      else if(!gameRunning && !gameOver) startGame();
+    });
+
+    // Show initial "Click to Start" message
+    resetGame();
+  </script>
+</body>
+</html>
+
 
