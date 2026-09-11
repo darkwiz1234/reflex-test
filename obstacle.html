@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+
+   <!DOCTYPE html>
 <html>
 <head>
   <title>OBJECT RUN 🏃</title>
@@ -229,34 +230,20 @@
       if(rand < 0.25) {
         obstacles.push({ x: canvas.width, y: canvas.height - 40, width: 40, height: 40, type: "block" });
       } else if(rand < 0.5) {
-        obstacles.push({ x
+            function spawnObstacle() {
+      let rand = Math.random();
+      if(rand < 0.25) {
+        // Ground block
+        obstacles.push({ x: canvas.width, y: canvas.height - 40, width: 40, height: 40, type: "block" });
       } else if(rand < 0.5) {
         // Ramp block
-        obstacles.push({ 
-          x: canvas.width, 
-          y: canvas.height - 80, 
-          width: 50, 
-          height: 80, 
-          type: "block" 
-        });
+        obstacles.push({ x: canvas.width, y: canvas.height - 80, width: 50, height: 80, type: "block" });
       } else if(rand < 0.75) {
         // Floating block
-        obstacles.push({ 
-          x: canvas.width, 
-          y: canvas.height - 120, 
-          width: 60, 
-          height: 30, 
-          type: "block" 
-        });
+        obstacles.push({ x: canvas.width, y: canvas.height - 120, width: 60, height: 30, type: "block" });
       } else {
         // Spike
-        obstacles.push({ 
-          x: canvas.width, 
-          y: canvas.height - 30, 
-          width: 30, 
-          height: 30, 
-          type: "spike" 
-        });
+        obstacles.push({ x: canvas.width, y: canvas.height - 30, width: 30, height: 30, type: "spike" });
       }
 
       if(gameRunning) {
@@ -281,5 +268,3 @@
   </script>
 </body>
 </html>
-
-
