@@ -35,20 +35,6 @@
       margin-top: 15px;
       font-size: 1.2em;
     }
-    .backBtn {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      font-size: 2em;
-      background: none;
-      border: none;
-      color: #fff;
-      cursor: pointer;
-    }
-    .backBtn:hover {
-      color: #00f2fe;
-      transform: scale(1.1);
-    }
     #controls {
       margin-top: 10px;
     }
@@ -66,7 +52,6 @@
   </style>
 </head>
 <body>
-  <button class="backBtn" onclick="location.href='index.html'">←</button>
   <div class="title">OBJECT RUN 🏃</div>
 
   <div id="gameBox">
@@ -80,11 +65,14 @@
     </div>
   </div>
 
+  <!-- Collision sound -->
+  <audio id="hitSound" src="collision.mp3"></audio>
+
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    let player = { x: 50, y: canvas.height - 30, width: 30, height: 30, dy: 0, jump: false };
+    let player = { x: 50, y: canvas.height - 30, width: 30, height: 30, dy: 0, jump: false, color: "#00f2fe" };
     let gravity = 0.8;
     let obstacles = [];
     let score = 0;
@@ -96,7 +84,7 @@
     let gameOver = false;
 
     function drawPlayer() {
-      ctx.fillStyle = "#00f2fe";
+      ctx.fillStyle = player.color;
       ctx.fillRect(player.x, player.y, player.width, player.height);
     }
 
@@ -115,6 +103,22 @@
           ctx.fill();
         }
       });
+    }
+
+    function updateTheme() {
+      if(score >= 100) {
+        document.body.style.background = "linear-gradient(to bottom, gold, darkorange)";
+        player.color = "#FFD700";
+      } else if(score >= 50) {
+        document.body.style.background = "linear-gradient(to bottom, #ff7e5f, #feb47b)";
+        player.color = "#ff3333";
+      } else if(score >= 20) {
+        document.body.style.background = "linear-gradient(to bottom, #8e2de2, #4a00e0)";
+        player.color = "#a020f0";
+      } else {
+        document.body.style.background = "linear-gradient(to bottom, #add8e6, #00008b)";
+        player.color = "#00f2fe";
+      }
     }
 
     function update() {
@@ -143,12 +147,29 @@
           localStorage.setItem("highscore", highscore);
           document.getElementById("highscore").innerText = highscore;
         }
+        updateTheme();
       }
 
+      // Collision detection with bounce
       obstacles.forEach(o => {
-        if(player.x < o.x + o.width && player.x + player.width > o.x &&
-           player.y < o.y + o.height && player.y + player.height > o.y) {
-          endGame();
+        if(o.type === "block") {
+          // Bounce on top
+          if(player.y + player.height <= o.y + 10 &&
+             player.x + player.width > o.x && player.x < o.x + o.width &&
+             player.dy >= 0) {
+            player.y = o.y - player.height;
+            player.dy = 0;
+          }
+          // Side collision = death
+          else if(player.x < o.x + o.width && player.x + player.width > o.x &&
+                  player.y < o.y + o.height && player.y + player.height > o.y) {
+            endGame();
+          }
+        } else if(o.type === "spike") {
+          if(player.x < o.x + o.width && player.x + player.width > o.x &&
+             player.y < o.y + o.height && player.y + player.height > o.y) {
+            endGame();
+          }
         }
       });
 
@@ -163,6 +184,7 @@
     }
 
     function endGame() {
+      document.getElementById("hitSound").play(); // play collision sound
       gameRunning = false;
       gameOver = true;
       ctx.fillStyle = "white";
@@ -185,7 +207,7 @@
 
     function resetGame() {
       score = 0;
-      highscore = 0; // ✅ Reset highscore too
+      highscore = 0;
       document.getElementById("score").innerText = score;
       document.getElementById("highscore").innerText = highscore;
       localStorage.setItem("highscore", highscore);
@@ -201,6 +223,7 @@
       ctx.fillStyle = "white";
       ctx.font = "20px Arial";
       ctx.fillText("Click to Start", canvas.width/2 - 60, canvas.height/2);
+      updateTheme();
     }
 
     function spawnObstacle() {
@@ -232,13 +255,15 @@
       }
     });
 
-    canvas.addEventListener("click", () => {
+       canvas.addEventListener("click", () => {
       if(gameOver) startGame();
       else if(!gameRunning && !gameOver) startGame();
     });
 
+    // Show initial "Click to Start" message
     resetGame();
   </script>
 </body>
 </html>
+
 
