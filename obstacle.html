@@ -1,95 +1,42 @@
-
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OBJECT RUN 🏃</title>
 
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Arial, Helvetica, sans-serif;
-}
-
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
 body{
     background:#111;
-    color:white;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:flex-start;
-    min-height:100vh;
-    transition:background 0.6s;
+    color:#fff;
+    text-align:center;
+    transition:.5s;
 }
-
-h1{
-    margin:20px 0 10px;
-    font-size:2.2rem;
-    text-shadow:0 0 10px cyan;
-}
-
+h1{margin:15px}
 #info{
-    display:flex;
-    gap:20px;
-    margin-bottom:10px;
-    font-size:1.1rem;
+    margin:10px;
+    font-size:20px;
 }
-
 canvas{
-    border:3px solid white;
-    background:#1d1d1d;
-    box-shadow:0 0 20px rgba(255,255,255,0.3);
+    background:#222;
+    border:3px solid #fff;
 }
-
-.controls{
-    margin-top:15px;
-    display:flex;
-    gap:10px;
-}
-
 button{
-    padding:10px 18px;
+    margin:10px 5px;
+    padding:8px 16px;
     border:none;
-    border-radius:8px;
+    border-radius:6px;
     cursor:pointer;
     font-weight:bold;
-    transition:0.2s;
 }
-
-button:hover{
-    transform:scale(1.05);
-}
-
-#pauseBtn{
-    background:#ff9800;
-    color:white;
-}
-
-#resetBtn{
-    background:#f44336;
-    color:white;
-}
-
-.purple-theme{
-    background:#2b1247;
-}
-
-.fire-theme{
-    background:#3a0900;
-}
-
-.gold-theme{
-    background:#3a3100;
-}
-
-#message{
-    margin-top:10px;
-    font-size:1.2rem;
-    font-weight:bold;
+#pause{background:orange;color:#fff}
+#reset{background:red;color:#fff}
+#msg{
     color:#ff5252;
+    margin-top:10px;
+    font-weight:bold;
 }
 </style>
 </head>
@@ -99,369 +46,291 @@ button:hover{
 <h1>OBJECT RUN 🏃</h1>
 
 <div id="info">
-    <div>Score: <span id="score">0</span></div>
-    <div>High Score: <span id="highScore">0</span></div>
+    Score: <span id="score">0</span>
+    |
+    High Score: <span id="high">0</span>
 </div>
 
-<canvas id="gameCanvas" width="900" height="350"></canvas>
+<canvas id="game" width="900" height="350"></canvas>
 
-<div class="controls">
-    <button id="pauseBtn">Pause</button>
-    <button id="resetBtn">Reset</button>
-</div>
+<br>
 
-<div id="message"></div>
+<button id="pause">Pause</button>
+<button id="reset">Reset</button>
 
-<audio id="collisionSound" src="collision.mp3"></audio>
-<audio id="bgMusic" src="music.mp3" loop></audio>
+<div id="msg"></div>
+
+<audio id="hit" src="collision.mp3"></audio>
+<audio id="music" src="music.mp3" loop></audio>
 
 <script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
 
-const scoreEl = document.getElementById("score");
-const highScoreEl = document.getElementById("highScore");
-const pauseBtn = document.getElementById("pauseBtn");
-const resetBtn = document.getElementById("resetBtn");
-const messageEl = document.getElementById("message");
+const c=document.getElementById("game"),
+ctx=c.getContext("2d"),
+scoreEl=document.getElementById("score"),
+highEl=document.getElementById("high"),
+msg=document.getElementById("msg"),
+music=document.getElementById("music"),
+hit=document.getElementById("hit");
 
-const collisionSound = document.getElementById("collisionSound");
-const bgMusic = document.getElementById("bgMusic");
+let score=0,
+high=localStorage.getItem("objRunHigh")||0,
+run=true,
+pause=false;
 
-let highScore = localStorage.getItem("objectRunHighScore") || 0;
-highScoreEl.textContent = highScore;
+highEl.textContent=high;
 
-const GRAVITY = 0.7;
-const JUMP_FORCE = -13;
-const GROUND_Y = 300;
+const G=300;
 
-let gameRunning = true;
-let paused = false;
-let score = 0;
-
-const player = {
-    x: 120,
-    y: GROUND_Y - 40,
-    width: 40,
-    height: 40,
-    velocityY: 0,
-    onGround: true,
-    color: "#00e5ff"
+let p={
+    x:120,
+    y:G-40,
+    w:40,
+    h:40,
+    vy:0,
+    ground:true
 };
 
-const obstacles = [];
+let obs=[];
 
-function updateTheme() {
-    document.body.classList.remove(
-        "purple-theme",
-        "fire-theme",
-        "gold-theme"
-    );
+const types={
+    ground:[60,40,G-40],
+    ramp:[70,80,G-80],
+    floating:[70,25,180],
+    spike:[40,40,G-40]
+};
 
-    if(score >= 100){
-        document.body.classList.add("gold-theme");
-    } else if(score >= 50){
-        document.body.classList.add("fire-theme");
-    } else if(score >= 20){
-        document.body.classList.add("purple-theme");
-    }
-}
-
-function jump(){
-    if(player.onGround && gameRunning && !paused){
-        player.velocityY = JUMP_FORCE;
-        player.onGround = false;
-    }
-}
-
-document.addEventListener("keydown", e=>{
-    if(e.code === "Space" || e.code === "ArrowUp"){
-        e.preventDefault();
-        jump();
+document.addEventListener("keydown",e=>{
+    if((e.code==="Space"||e.code==="ArrowUp")&&p.ground&&run&&!pause){
+        p.vy=-13;
+        p.ground=false;
     }
 });
 
-canvas.addEventListener("click", jump);
+c.onclick=()=>{
+    if(p.ground&&run&&!pause){
+        p.vy=-13;
+        p.ground=false;
+    }
+};
 
-function createObstacle(){
+function spawn(){
+    if(run&&!pause){
 
-    const types = ["ground","ramp","floating","spike"];
-    const type = types[Math.floor(Math.random()*types.length)];
+        let t=Object.keys(types)[
+            Math.floor(Math.random()*4)
+        ];
 
-    let obstacle = {
-        type,
-        x: canvas.width + 20,
-        counted:false
-    };
+        let [w,h,y]=types[t];
 
-    if(type === "ground"){
-        obstacle.width = 60;
-        obstacle.height = 40;
-        obstacle.y = GROUND_Y - obstacle.height;
+        obs.push({
+            t,x:c.width+20,w,h,y,count:false
+        });
     }
 
-    if(type === "ramp"){
-        obstacle.width = 70;
-        obstacle.height = 80;
-        obstacle.y = GROUND_Y - obstacle.height;
-    }
-
-    if(type === "floating"){
-        obstacle.width = 70;
-        obstacle.height = 25;
-        obstacle.y = 180;
-    }
-
-    if(type === "spike"){
-        obstacle.width = 40;
-        obstacle.height = 40;
-        obstacle.y = GROUND_Y - obstacle.height;
-    }
-
-    obstacles.push(obstacle);
-}
-
-setInterval(()=>{
-    if(gameRunning && !paused){
-        createObstacle();
-    }
-}, 2000 + Math.random()*1000);
-
-function drawPlayer(){
-    ctx.fillStyle = player.color;
-    ctx.fillRect(
-        player.x,
-        player.y,
-        player.width,
-        player.height
+    setTimeout(
+        spawn,
+        500+Math.random()*500
     );
 }
 
-function drawObstacle(o){
+spawn();
 
-    if(o.type === "spike"){
-        ctx.fillStyle = "red";
-
-        ctx.beginPath();
-        ctx.moveTo(o.x, o.y + o.height);
-        ctx.lineTo(o.x + o.width/2, o.y);
-        ctx.lineTo(o.x + o.width, o.y + o.height);
-        ctx.closePath();
-        ctx.fill();
-        return;
-    }
-
-    if(o.type === "floating"){
-        ctx.fillStyle = "#00ff95";
-    }
-    else if(o.type === "ramp"){
-        ctx.fillStyle = "#ff9800";
-    }
-    else{
-        ctx.fillStyle = "#9e9e9e";
-    }
-
-    ctx.fillRect(
-        o.x,
-        o.y,
-        o.width,
-        o.height
-    );
+function theme(){
+    document.body.style.background=
+        score>=100?"#6b5700":
+        score>=50?"#4d1200":
+        score>=20?"#31124a":
+        "#111";
 }
 
-function collisionRect(a,b){
-    return (
-        a.x < b.x + b.width &&
-        a.x + a.width > b.x &&
-        a.y < b.y + b.height &&
-        a.y + a.height > b.y
-    );
-}
+function over(){
 
-function handleCollisions(){
+    if(!run)return;
 
-    player.onGround = false;
+    run=false;
 
-    if(player.y + player.height >= GROUND_Y){
-        player.y = GROUND_Y - player.height;
-        player.velocityY = 0;
-        player.onGround = true;
-    }
+    music.pause();
 
-    for(let o of obstacles){
+    hit.currentTime=0;
+    hit.play();
 
-        if(!collisionRect(player,o)) continue;
+    msg.textContent=
+    "GAME OVER! Press Reset";
 
-        if(o.type === "spike"){
-            gameOver();
-            return;
-        }
-
-        const playerBottom = player.y + player.height;
-        const playerTop = player.y;
-        const playerRight = player.x + player.width;
-        const playerLeft = player.x;
-
-        const obstacleTop = o.y;
-        const obstacleBottom = o.y + o.height;
-        const obstacleLeft = o.x;
-        const obstacleRight = o.x + o.width;
-
-        const overlapTop = playerBottom - obstacleTop;
-        const overlapBottom = obstacleBottom - playerTop;
-        const overlapLeft = playerRight - obstacleLeft;
-        const overlapRight = obstacleRight - playerLeft;
-
-        const minOverlap = Math.min(
-            overlapTop,
-            overlapBottom,
-            overlapLeft,
-            overlapRight
-        );
-
-        if(minOverlap === overlapTop &&
-           player.velocityY >= 0){
-
-            player.y = obstacleTop - player.height;
-            player.velocityY = 0;
-            player.onGround = true;
-        }
-        else{
-            gameOver();
-            return;
-        }
-    }
-}
-
-function gameOver(){
-
-    if(!gameRunning) return;
-
-    gameRunning = false;
-
-    bgMusic.pause();
-
-    collisionSound.currentTime = 0;
-    collisionSound.play();
-
-    messageEl.textContent =
-        "GAME OVER! Press Reset to play again.";
-
-    if(score > highScore){
-        highScore = score;
+    if(score>high){
+        high=score;
         localStorage.setItem(
-            "objectRunHighScore",
-            highScore
+            "objRunHigh",
+            high
         );
-        highScoreEl.textContent = highScore;
+        highEl.textContent=high;
     }
 }
 
-function resetGame(){
+function reset(){
 
-    score = 0;
-    scoreEl.textContent = score;
+    score=0;
+    scoreEl.textContent=0;
 
-    obstacles.length = 0;
+    obs=[];
 
-    player.y = GROUND_Y - player.height;
-    player.velocityY = 0;
-    player.onGround = true;
+    p.y=G-40;
+    p.vy=0;
+    p.ground=true;
 
-    gameRunning = true;
-    paused = false;
+    run=true;
+    pause=false;
 
-    pauseBtn.textContent = "Pause";
+    document.getElementById("pause")
+    .textContent="Pause";
 
-    messageEl.textContent = "";
+    msg.textContent="";
 
-    updateTheme();
+    theme();
 
-    bgMusic.currentTime = 0;
-
-    bgMusic.play().catch(()=>{});
+    music.currentTime=0;
+    music.play().catch(()=>{});
 }
 
-pauseBtn.addEventListener("click",()=>{
+document.getElementById("pause")
+.onclick=()=>{
 
-    if(!gameRunning) return;
+    if(!run)return;
 
-    paused = !paused;
+    pause=!pause;
 
-    if(paused){
-        pauseBtn.textContent = "Resume";
-        bgMusic.pause();
-    }else{
-        pauseBtn.textContent = "Pause";
-        bgMusic.play().catch(()=>{});
-    }
-});
+    document.getElementById("pause")
+    .textContent=
+    pause?"Resume":"Pause";
 
-resetBtn.addEventListener("click", resetGame);
+    pause?music.pause():
+    music.play().catch(()=>{});
+};
 
-window.addEventListener("click", ()=>{
-    if(bgMusic.paused && gameRunning && !paused){
-        bgMusic.play().catch(()=>{});
-    }
+document.getElementById("reset")
+.onclick=reset;
+
+window.addEventListener("click",()=>{
+    music.play().catch(()=>{});
 },{once:true});
+
+function collide(a,b){
+    return(
+        a.x<b.x+b.w &&
+        a.x+a.w>b.x &&
+        a.y<b.y+b.h &&
+        a.y+a.h>b.y
+    );
+}
 
 function update(){
 
-    if(!gameRunning || paused) return;
+    if(!run||pause)return;
 
-    player.velocityY += GRAVITY;
-    player.y += player.velocityY;
+    p.vy+=0.7;
+    p.y+=p.vy;
+    p.ground=false;
 
-    for(let i=obstacles.length-1;i>=0;i--){
-
-        const o = obstacles[i];
-
-        o.x -= 5;
-
-        if(!o.counted && o.x + o.width < 0){
-
-            o.counted = true;
-
-            score++;
-            scoreEl.textContent = score;
-
-            updateTheme();
-
-            obstacles.splice(i,1);
-        }
+    if(p.y+p.h>=G){
+        p.y=G-p.h;
+        p.vy=0;
+        p.ground=true;
     }
 
-    handleCollisions();
+    for(let i=obs.length-1;i>=0;i--){
+
+        let o=obs[i];
+
+        o.x-=5;
+
+        if(
+            !o.count &&
+            o.x+o.w<0
+        ){
+            o.count=true;
+            score++;
+            scoreEl.textContent=score;
+            theme();
+            obs.splice(i,1);
+            continue;
+        }
+
+        if(!collide(p,o))continue;
+
+        if(o.t==="spike"){
+            over();
+            return;
+        }
+
+        if(
+            p.y+p.h<=o.y+12 &&
+            p.vy>=0
+        ){
+            p.y=o.y-p.h;
+            p.vy=0;
+            p.ground=true;
+        }
+        else{
+            over();
+            return;
+        }
+    }
 }
 
 function draw(){
 
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.clearRect(0,0,c.width,c.height);
 
-    ctx.fillStyle = "#444";
+    ctx.fillStyle="#555";
     ctx.fillRect(
-        0,
-        GROUND_Y,
-        canvas.width,
-        canvas.height - GROUND_Y
+        0,G,
+        c.width,
+        c.height-G
     );
 
-    drawPlayer();
+    ctx.fillStyle="#00e5ff";
+    ctx.fillRect(
+        p.x,p.y,
+        p.w,p.h
+    );
 
-    for(const o of obstacles){
-        drawObstacle(o);
-    }
+    obs.forEach(o=>{
+
+        if(o.t==="spike"){
+
+            ctx.fillStyle="red";
+
+            ctx.beginPath();
+            ctx.moveTo(o.x,o.y+o.h);
+            ctx.lineTo(o.x+o.w/2,o.y);
+            ctx.lineTo(o.x+o.w,o.y+o.h);
+            ctx.fill();
+
+        }else{
+
+            ctx.fillStyle=
+            o.t==="floating"
+            ?"#00ff95"
+            :o.t==="ramp"
+            ?"orange"
+            :"#aaa";
+
+            ctx.fillRect(
+                o.x,o.y,
+                o.w,o.h
+            );
+        }
+    });
 }
 
-function gameLoop(){
-
+(function loop(){
     update();
     draw();
-
-    requestAnimationFrame(gameLoop);
-}
-
-gameLoop();
+    requestAnimationFrame(loop);
+})();
 </script>
+
 </body>
 </html>
+```
