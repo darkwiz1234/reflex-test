@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,7 +29,7 @@
     }
     #progress-bar-fill {
         height: 100%; width: 0%; background: #0ff; 
-        box-shadow: 0 0 12px #0ff;
+        box-shadow: 0 0 12px #0ff; transition: width 0.1s linear;
     }
     #progress-text { font-size: 18px; color: #0ff; text-shadow: 0 0 8px #0ff; letter-spacing: 2px; }
     
@@ -45,15 +44,19 @@
     }
     .btn:hover { background: #0ff; color: #000; box-shadow: 0 0 20px #0ff; }
     #pauseBtn { bottom: 15px; right: 15px; }
-    #resetBtn { bottom: 15px; right: 110px; }
     
     #message-overlay {
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         display: flex; justify-content: center; align-items: center; flex-direction: column;
         background: rgba(0, 0, 0, 0.75); display: none; pointer-events: none; z-index: 10;
+        gap: 15px;
     }
-    #message-text { font-size: 40px; color: #f0f; text-shadow: 0 0 20px #f0f; margin-bottom: 20px; }
-    .msg-btn { pointer-events: auto; font-size: 18px; position: relative; }
+    #message-text { font-size: 40px; color: #f0f; text-shadow: 0 0 20px #f0f; margin-bottom: 10px; }
+    .msg-btn { position: relative; pointer-events: auto; font-size: 18px; padding: 12px 30px; }
+    
+    /* Specific styles for back button */
+    #hubBtn { border-color: #f0f; color: #f0f; text-shadow: 0 0 5px #f0f; box-shadow: 0 0 10px rgba(255,0,255,0.3); }
+    #hubBtn:hover { background: #f0f; color: #000; box-shadow: 0 0 20px #f0f; }
 </style>
 </head>
 <body>
@@ -66,11 +69,12 @@
             <div id="progress-bar-bg"><div id="progress-bar-fill"></div></div>
         </div>
         <div id="best" class="hud">BEST: 0%</div>
-        <button id="resetBtn" class="btn">RESET</button>
         <button id="pauseBtn" class="btn">PAUSE</button>
+        
         <div id="message-overlay">
             <div id="message-text">GAME OVER</div>
-            <button id="overlayResetBtn" class="btn msg-btn">TRY AGAIN</button>
+            <button id="overlayActionBtn" class="btn msg-btn">TRY AGAIN</button>
+            <button id="hubBtn" class="btn msg-btn" onclick="window.location.href='index.html'">BACK TO HUB</button>
         </div>
     </div>
 </div>
@@ -85,8 +89,7 @@ const uiProgressText = document.getElementById('progress-text');
 const uiProgressBar = document.getElementById('progress-bar-fill');
 const uiBest = document.getElementById('best');
 const pauseBtn = document.getElementById('pauseBtn');
-const resetBtn = document.getElementById('resetBtn');
-const overlayResetBtn = document.getElementById('overlayResetBtn');
+const overlayActionBtn = document.getElementById('overlayActionBtn');
 const msgOverlay = document.getElementById('message-overlay');
 const msgText = document.getElementById('message-text');
 
@@ -97,18 +100,18 @@ let gameState = 'START';
 let bestProgress = localStorage.getItem('objectRunBest') || 0;
 uiBest.innerText = `BEST: ${bestProgress}%`;
 
-// Adjusted map: 1-block steps, lower reachable ceilings, fair spike spacing
+// Fixed Map Array: Floating platforms are now lowered significantly (Rows 7 & 8) so they are easy to reach.
 const mapGrid = [
     "....................................................................................................................................................................................................................................................................................................................................................................................",
     "....................................................................................................................................................................................................................................................................................................................................................................................",
     "....................................................................................................................................................................................................................................................................................................................................................................................",
     "....................................................................................................................................................................................................................................................................................................................................................................................",
-    "...............................................................................................................................................................######.......................................######........................................######....................................................................................................................",
-    "..................................................................................................................######.......................................vvvvvv..................######..............vvvvvv..................######................vvvvvv.........................................................######....................................................",
-    "..................................................................................######..........................vvvvvv...................######......................................vvvvvv...............................######..................vvvvvv..................######..................................######....................................................",
-    "...................................................................######.........vvvvvv...........######..................................vvvvvv..................######..................######.......######................vvvvvv...................................vvvvvv...........######..................######....................................................",
-    "..................................................######...........vvvvvv..........................vvvvvv..................######...................................vvvvvv...................vvvvvv.......vvvvvv...................................######..................................vvvvvv..................######....................................................",
-    "..........................................#...#...vvvvvv....^^^....######....^^....######...^^^^...######...^...^^^..^.....######....^^^..^...######...^^^^..^^...######...^^^........^^^...######...^^....................######...^^..######............^^^..^^^...^.....######...^.....######...^^..........^^^..######...^^^^..^^^...######....................................",
+    "....................................................................................................................................................................................................................................................................................................................................................................................",
+    "....................................................................................................................................................................................................................................................................................................................................................................................",
+    "......................................................................................................................................######.......................................######........................................######....................................................................................................................",
+    ".........................................................................................................######.......................vvvvvv...................######..............vvvvvv..................######................vvvvvv.........................................................######....................................................",
+    ".........................................................................######..........................vvvvvv................................................vvvvvv......................................vvvvvv.......................................######................vvvvvv..................######..................................######....................................................",
+    "...................................................^^....######...^^^...######...vvvvvv...######...^^^^...######...^...^^^..^........######....^^^..^...######...^^^^..^^...######...^^^........^^^...######...^^....................######...^^..######............^^^..^^^...^.....######...^.....######...^^..........^^^..######...^^^^..^^^...######....................................",
     "####################################################################################################################################################################################################################################################################################################################################################################################"
 ];
 
@@ -132,7 +135,8 @@ function parseLevel() {
 }
 parseLevel();
 
-let player = { x: 120, y: 320, size: 28, vx: 5.8, vy: 0, gravity: 0.72, jumpForce: -12.4, angle: 0, onGround: false };
+// Player settings tweaked for a highly responsive feel
+let player = { x: 120, y: 320, size: 28, vx: 5.8, vy: 0, gravity: 0.75, jumpForce: -12.5, angle: 0, onGround: false };
 let cameraX = 0;
 let particles = [];
 let musicStarted = false;
@@ -141,16 +145,13 @@ let musicStarted = false;
 const bgDiamonds = [];
 for (let i = 0; i < 25; i++) {
     bgDiamonds.push({
-        x: Math.random() * 2000,
-        y: Math.random() * 260 + 20,
-        size: Math.random() * 18 + 10,
-        speed: Math.random() * 0.4 + 0.15,
-        rot: Math.random() * Math.PI
+        x: Math.random() * 2000, y: Math.random() * 260 + 20,
+        size: Math.random() * 18 + 10, speed: Math.random() * 0.4 + 0.15, rot: Math.random() * Math.PI
     });
 }
 
 function resetGame() {
-    player = { x: 120, y: 320, size: 28, vx: 5.8, vy: 0, gravity: 0.72, jumpForce: -12.4, angle: 0, onGround: false };
+    player = { x: 120, y: 320, size: 28, vx: 5.8, vy: 0, gravity: 0.75, jumpForce: -12.5, angle: 0, onGround: false };
     cameraX = 0;
     particles = [];
     gameState = 'PLAYING';
@@ -164,8 +165,10 @@ function die() {
     bgMusic.pause();
     msgText.innerText = "GAME OVER";
     msgText.style.color = "#f0f";
+    overlayActionBtn.innerText = "TRY AGAIN";
     msgOverlay.style.display = 'flex';
     
+    // Death Explosion
     for(let i=0; i<20; i++) {
         particles.push({
             x: player.x + player.size/2, y: player.y + player.size/2,
@@ -179,6 +182,7 @@ function win() {
     gameState = 'WIN';
     msgText.innerText = "LEVEL COMPLETE!";
     msgText.style.color = "#0ff";
+    overlayActionBtn.innerText = "PLAY AGAIN";
     msgOverlay.style.display = 'flex';
 }
 
@@ -202,18 +206,28 @@ window.addEventListener('mousedown', (e) => {
 
 function togglePause() {
     if(gameState === 'PLAYING') {
-        gameState = 'PAUSED'; bgMusic.pause();
-        msgText.innerText = "PAUSED"; msgText.style.color = "#fff";
+        gameState = 'PAUSED'; 
+        bgMusic.pause();
+        msgText.innerText = "PAUSED"; 
+        msgText.style.color = "#fff";
+        overlayActionBtn.innerText = "RESUME";
         msgOverlay.style.display = 'flex';
     } else if(gameState === 'PAUSED') {
-        gameState = 'PLAYING'; bgMusic.play().catch(()=>{});
+        gameState = 'PLAYING'; 
+        bgMusic.play().catch(()=>{});
         msgOverlay.style.display = 'none';
     }
 }
 
 pauseBtn.addEventListener('click', togglePause);
-resetBtn.addEventListener('click', resetGame);
-overlayResetBtn.addEventListener('click', resetGame);
+
+overlayActionBtn.addEventListener('click', () => {
+    if(gameState === 'PAUSED') {
+        togglePause();
+    } else {
+        resetGame();
+    }
+});
 
 function update() {
     if(gameState !== 'PLAYING') return;
@@ -235,17 +249,17 @@ function update() {
     for(let b of blocks) {
         if(player.x < b.x + b.w && player.x + player.size > b.x &&
            player.y < b.y + b.h && player.y + player.size > b.y) {
-            if(player.vy > 0) {
+            if(player.vy > 0) { // Landed on top
                 player.y = b.y - player.size;
                 player.vy = 0;
                 player.onGround = true;
-            } else if (player.vy < 0) {
+            } else if (player.vy < 0) { // Hit ceiling
                 die(); return;
             }
         }
     }
 
-    // Spike Collision (forgiving inner hitbox)
+    // Spike Collision (forgiving hitbox)
     let pRect = { x: player.x + 5, y: player.y + 5, w: player.size - 10, h: player.size - 10 };
     for(let s of spikes) {
         let sx = s.x + 8, sy = s.type === 'up' ? s.y + 16 : s.y, sw = 24, sh = 24;
@@ -254,13 +268,13 @@ function update() {
         }
     }
 
-    // Rotation
+    // Rotations in air
     if(!player.onGround) player.angle += 0.12;
     else player.angle = Math.round(player.angle / (Math.PI/2)) * (Math.PI/2);
 
     cameraX = player.x - 180;
 
-    // Progress update
+    // Progress updates
     let maxDist = levelWidth - 800;
     let progress = Math.min(100, Math.max(0, Math.floor((player.x / maxDist) * 100)));
     
@@ -277,7 +291,6 @@ function update() {
 }
 
 function drawBackground() {
-    // Gradient Backdrop
     let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
     grad.addColorStop(0, '#060717');
     grad.addColorStop(0.6, '#110b27');
@@ -310,7 +323,7 @@ function drawBackground() {
         ctx.restore();
     }
 
-    // Futuristic Neon Grid Lines
+    // Grid Lines
     ctx.strokeStyle = 'rgba(0, 255, 255, 0.06)';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -393,7 +406,7 @@ function draw() {
 
     ctx.restore();
 
-    // Start Screen
+    // Start Screen Notice
     if(gameState === 'START') {
         ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0,0,800,440);
         ctx.fillStyle = '#0ff'; ctx.font = '22px Orbitron'; ctx.textAlign = 'center';
