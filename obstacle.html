@@ -8,52 +8,52 @@
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
     body {
-        margin: 0; padding: 0; background: #0b0c10; color: #fff;
+        margin: 0; padding: 0; background: #06070a; color: #fff;
         font-family: 'Orbitron', sans-serif; overflow: hidden; user-select: none;
     }
     #game-container {
         position: relative; width: 800px; height: 440px; margin: 50px auto;
-        box-shadow: 0 0 20px rgba(0, 255, 255, 0.2); border: 2px solid #1f2833;
+        box-shadow: 0 0 30px rgba(0, 255, 255, 0.3); border: 2px solid #00ffff44;
+        border-radius: 8px; overflow: hidden;
     }
-    canvas { display: block; width: 100%; height: 100%; background: linear-gradient(to bottom, #090a0f, #1a1a3a); }
+    canvas { display: block; width: 100%; height: 100%; background: #050614; }
     #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
     
-    /* New Progress Bar */
     #progress-container {
         position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
-        width: 400px; text-align: center;
+        width: 360px; text-align: center;
     }
     #progress-bar-bg {
-        width: 100%; height: 10px; background: rgba(255, 255, 255, 0.1);
-        border: 2px solid #0ff; border-radius: 5px; overflow: hidden;
-        box-shadow: 0 0 10px rgba(0, 255, 255, 0.3); margin-top: 5px;
+        width: 100%; height: 10px; background: rgba(0, 255, 255, 0.15);
+        border: 2px solid #0ff; border-radius: 6px; overflow: hidden;
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.4); margin-top: 6px;
     }
     #progress-bar-fill {
         height: 100%; width: 0%; background: #0ff; 
-        box-shadow: 0 0 10px #0ff; transition: width 0.1s linear;
+        box-shadow: 0 0 12px #0ff;
     }
-    #progress-text { font-size: 18px; color: #0ff; text-shadow: 0 0 8px #0ff; letter-spacing: 2px;}
+    #progress-text { font-size: 18px; color: #0ff; text-shadow: 0 0 8px #0ff; letter-spacing: 2px; }
     
-    .hud { position: absolute; padding: 15px; font-size: 18px; text-shadow: 0 0 8px #0ff; color: #0ff; }
+    .hud { position: absolute; padding: 15px; font-size: 16px; text-shadow: 0 0 8px #0ff; color: #0ff; }
     #best { top: 5px; right: 10px; }
     
     .btn {
-        position: absolute; padding: 10px 20px; font-family: 'Orbitron', sans-serif;
-        background: #1f2833; border: 2px solid #0ff; color: #0ff; font-size: 16px;
+        position: absolute; padding: 8px 18px; font-family: 'Orbitron', sans-serif;
+        background: #090e17; border: 2px solid #0ff; color: #0ff; font-size: 14px;
         cursor: pointer; pointer-events: auto; text-shadow: 0 0 5px #0ff;
         box-shadow: 0 0 10px rgba(0,255,255,0.3); border-radius: 5px; transition: 0.2s;
     }
     .btn:hover { background: #0ff; color: #000; box-shadow: 0 0 20px #0ff; }
     #pauseBtn { bottom: 15px; right: 15px; }
-    #resetBtn { bottom: 15px; right: 120px; }
+    #resetBtn { bottom: 15px; right: 110px; }
     
     #message-overlay {
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         display: flex; justify-content: center; align-items: center; flex-direction: column;
-        background: rgba(0, 0, 0, 0.7); display: none; pointer-events: none; z-index: 10;
+        background: rgba(0, 0, 0, 0.75); display: none; pointer-events: none; z-index: 10;
     }
     #message-text { font-size: 40px; color: #f0f; text-shadow: 0 0 20px #f0f; margin-bottom: 20px; }
-    .msg-btn { pointer-events: auto; font-size: 20px; position: relative; }
+    .msg-btn { pointer-events: auto; font-size: 18px; position: relative; }
 </style>
 </head>
 <body>
@@ -61,16 +61,13 @@
 <div id="game-container">
     <canvas id="gameCanvas" width="800" height="440"></canvas>
     <div id="ui-layer">
-        
         <div id="progress-container">
             <div id="progress-text">0%</div>
             <div id="progress-bar-bg"><div id="progress-bar-fill"></div></div>
         </div>
-
         <div id="best" class="hud">BEST: 0%</div>
         <button id="resetBtn" class="btn">RESET</button>
         <button id="pauseBtn" class="btn">PAUSE</button>
-        
         <div id="message-overlay">
             <div id="message-text">GAME OVER</div>
             <button id="overlayResetBtn" class="btn msg-btn">TRY AGAIN</button>
@@ -100,20 +97,21 @@ let gameState = 'START';
 let bestProgress = localStorage.getItem('objectRunBest') || 0;
 uiBest.innerText = `BEST: ${bestProgress}%`;
 
-// Level Design (Map string) 
+// Adjusted map: 1-block steps, lower reachable ceilings, fair spike spacing
 const mapGrid = [
-    ".....................................................................................................................................................................................................................................................................................................................................................",
-    ".....................................................................................................................................................................................................................................................................................................................................................",
-    ".....................................................................................................................................................................................................................................................................................................................................................",
-    ".......................................................................................................................................................................######.....................................######.......................................######................................................................................",
-    "........................................................................######..........................................######.............................######......................vvvvvv..................######.............vvvvvv................######...............vvvvvv.......................................................######...................",
-    "........................................................................vvvvvv................######..................vvvvvv.............................vvvvvv......................######..................vvvvvv.............######................vvvvvv...............######................######...............................######...................",
-    ".........................................######.........................######................vvvvvv..................######..............######.........######..........######......vvvvvv.......######.....######.............vvvvvv......######....######...............vvvvvv......######......vvvvvv........######...............######...................",
-    "..........................######.........vvvvvv.........######..........vvvvvv................######..................vvvvvv..............vvvvvv.........vvvvvv..........vvvvvv......######.......vvvvvv.....vvvvvv.............######......vvvvvv....vvvvvv...............######......vvvvvv......######........vvvvvv...............######...................",
-    "..........................vvvvvv.........######.........vvvvvv..........######................vvvvvv..................######..............######.........######..........######...................######........................######......######........................######......######......................######...............######...................",
-    "....................^^....######...^^^...######...^^^...######...^^^^...######...^...^^^..^...######...^^^^...^^^..^..######..^...^^^^..^.######..^^^..^.######..^^...^..######..^^^........^^^..######..^^..........^^^..^^^...######..^^..######...........^^^..^^^...^..######..^..######..^^........^^^..^^..######...^^^^..^^^...######...................",
-    "#####################################################################################################################################################################################################################################################################################################################################################"
+    "....................................................................................................................................................................................................................................................................................................................................................................................",
+    "....................................................................................................................................................................................................................................................................................................................................................................................",
+    "....................................................................................................................................................................................................................................................................................................................................................................................",
+    "....................................................................................................................................................................................................................................................................................................................................................................................",
+    "...............................................................................................................................................................######.......................................######........................................######....................................................................................................................",
+    "..................................................................................................................######.......................................vvvvvv..................######..............vvvvvv..................######................vvvvvv.........................................................######....................................................",
+    "..................................................................................######..........................vvvvvv...................######......................................vvvvvv...............................######..................vvvvvv..................######..................................######....................................................",
+    "...................................................................######.........vvvvvv...........######..................................vvvvvv..................######..................######.......######................vvvvvv...................................vvvvvv...........######..................######....................................................",
+    "..................................................######...........vvvvvv..........................vvvvvv..................######...................................vvvvvv...................vvvvvv.......vvvvvv...................................######..................................vvvvvv..................######....................................................",
+    "..........................................#...#...vvvvvv....^^^....######....^^....######...^^^^...######...^...^^^..^.....######....^^^..^...######...^^^^..^^...######...^^^........^^^...######...^^....................######...^^..######............^^^..^^^...^.....######...^.....######...^^..........^^^..######...^^^^..^^^...######....................................",
+    "####################################################################################################################################################################################################################################################################################################################################################################################"
 ];
+
 const TILE_SIZE = 40;
 let levelWidth = mapGrid[0].length * TILE_SIZE;
 let blocks = [];
@@ -134,14 +132,25 @@ function parseLevel() {
 }
 parseLevel();
 
-// INCREMENTED jumpForce from -11.5 to -12.3 for a slightly higher/longer jump
-let player = { x: 150, y: 320, size: 28, vx: 5.5, vy: 0, gravity: 0.7, jumpForce: -12.3, angle: 0, onGround: false };
+let player = { x: 120, y: 320, size: 28, vx: 5.8, vy: 0, gravity: 0.72, jumpForce: -12.4, angle: 0, onGround: false };
 let cameraX = 0;
 let particles = [];
 let musicStarted = false;
 
+// Background Ambient Shapes
+const bgDiamonds = [];
+for (let i = 0; i < 25; i++) {
+    bgDiamonds.push({
+        x: Math.random() * 2000,
+        y: Math.random() * 260 + 20,
+        size: Math.random() * 18 + 10,
+        speed: Math.random() * 0.4 + 0.15,
+        rot: Math.random() * Math.PI
+    });
+}
+
 function resetGame() {
-    player = { x: 150, y: 320, size: 28, vx: 5.5, vy: 0, gravity: 0.7, jumpForce: -12.3, angle: 0, onGround: false };
+    player = { x: 120, y: 320, size: 28, vx: 5.8, vy: 0, gravity: 0.72, jumpForce: -12.4, angle: 0, onGround: false };
     cameraX = 0;
     particles = [];
     gameState = 'PLAYING';
@@ -157,7 +166,6 @@ function die() {
     msgText.style.color = "#f0f";
     msgOverlay.style.display = 'flex';
     
-    // Death particles
     for(let i=0; i<20; i++) {
         particles.push({
             x: player.x + player.size/2, y: player.y + player.size/2,
@@ -217,7 +225,7 @@ function update() {
     for(let b of blocks) {
         if(player.x < b.x + b.w && player.x + player.size > b.x &&
            player.y < b.y + b.h && player.y + player.size > b.y) {
-            die(); return; 
+            die(); return;
         }
     }
 
@@ -227,18 +235,18 @@ function update() {
     for(let b of blocks) {
         if(player.x < b.x + b.w && player.x + player.size > b.x &&
            player.y < b.y + b.h && player.y + player.size > b.y) {
-            if(player.vy > 0) { // Landed on top
+            if(player.vy > 0) {
                 player.y = b.y - player.size;
                 player.vy = 0;
                 player.onGround = true;
-            } else if (player.vy < 0) { // Hit ceiling
+            } else if (player.vy < 0) {
                 die(); return;
             }
         }
     }
 
-    // Spike Collision (forgiving hitbox)
-    let pRect = { x: player.x + 4, y: player.y + 4, w: player.size - 8, h: player.size - 8 };
+    // Spike Collision (forgiving inner hitbox)
+    let pRect = { x: player.x + 5, y: player.y + 5, w: player.size - 10, h: player.size - 10 };
     for(let s of spikes) {
         let sx = s.x + 8, sy = s.type === 'up' ? s.y + 16 : s.y, sw = 24, sh = 24;
         if(pRect.x < sx + sw && pRect.x + pRect.w > sx && pRect.y < sy + sh && pRect.y + pRect.h > sy) {
@@ -246,15 +254,14 @@ function update() {
         }
     }
 
-    // Aerial Rotation
+    // Rotation
     if(!player.onGround) player.angle += 0.12;
     else player.angle = Math.round(player.angle / (Math.PI/2)) * (Math.PI/2);
 
-    // Camera follow
-    cameraX = player.x - 200;
+    cameraX = player.x - 180;
 
-    // Progress bar update
-    let maxDist = levelWidth - 800; // Total length minus the screen width
+    // Progress update
+    let maxDist = levelWidth - 800;
     let progress = Math.min(100, Math.max(0, Math.floor((player.x / maxDist) * 100)));
     
     uiProgressText.innerText = `${progress}%`;
@@ -269,26 +276,67 @@ function update() {
     if(progress >= 100) win();
 }
 
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function drawBackground() {
+    // Gradient Backdrop
+    let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#060717');
+    grad.addColorStop(0.6, '#110b27');
+    grad.addColorStop(1, '#051b2c');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Background Grid
-    ctx.strokeStyle = 'rgba(0, 255, 255, 0.05)';
+    // Parallax Mountain Silhouettes
+    ctx.fillStyle = 'rgba(20, 20, 50, 0.4)';
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height);
+    for (let x = 0; x <= canvas.width + 100; x += 100) {
+        let peakY = 220 + Math.sin((x + cameraX * 0.2) * 0.006) * 45;
+        ctx.lineTo(x, peakY);
+    }
+    ctx.lineTo(canvas.width, canvas.height);
+    ctx.fill();
+
+    // Floating Ambient Neon Diamonds
+    ctx.strokeStyle = 'rgba(0, 255, 255, 0.15)';
+    ctx.lineWidth = 1.5;
+    for (let d of bgDiamonds) {
+        let drawX = (d.x - cameraX * d.speed) % 900;
+        if (drawX < -50) drawX += 900;
+
+        ctx.save();
+        ctx.translate(drawX, d.y);
+        ctx.rotate(d.rot);
+        ctx.strokeRect(-d.size/2, -d.size/2, d.size, d.size);
+        ctx.restore();
+    }
+
+    // Futuristic Neon Grid Lines
+    ctx.strokeStyle = 'rgba(0, 255, 255, 0.06)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     let offsetX = cameraX % TILE_SIZE;
-    for(let i=0; i<=canvas.width; i+=TILE_SIZE) { ctx.moveTo(i-offsetX, 0); ctx.lineTo(i-offsetX, canvas.height); }
-    for(let i=0; i<=canvas.height; i+=TILE_SIZE) { ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); }
+    for(let i=0; i<=canvas.width; i+=TILE_SIZE) { 
+        ctx.moveTo(i-offsetX, 0); ctx.lineTo(i-offsetX, canvas.height); 
+    }
+    for(let i=0; i<=canvas.height; i+=TILE_SIZE) { 
+        ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); 
+    }
     ctx.stroke();
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawBackground();
 
     ctx.save();
     ctx.translate(-cameraX, 0);
 
-    // Blocks
-    ctx.shadowBlur = 10;
+    // Draw Blocks with Neon Glow
+    ctx.shadowBlur = 12;
     ctx.shadowColor = '#0ff';
     ctx.strokeStyle = '#0ff';
-    ctx.fillStyle = '#0b0c10';
+    ctx.fillStyle = '#060a12';
     ctx.lineWidth = 2;
     for(let b of blocks) {
         if(b.x > cameraX - TILE_SIZE && b.x < cameraX + 800) {
@@ -297,7 +345,7 @@ function draw() {
         }
     }
 
-    // Spikes
+    // Draw Spikes
     ctx.shadowColor = '#f0f';
     ctx.fillStyle = '#f0f';
     for(let s of spikes) {
@@ -316,22 +364,22 @@ function draw() {
         }
     }
 
-    // Player
+    // Draw Player
     if(gameState !== 'GAMEOVER') {
-        ctx.shadowColor = '#fff';
+        ctx.shadowColor = '#0ff';
         ctx.fillStyle = '#0ff';
         ctx.save();
         ctx.translate(player.x + player.size/2, player.y + player.size/2);
         ctx.rotate(player.angle);
         ctx.fillRect(-player.size/2, -player.size/2, player.size, player.size);
-        ctx.fillStyle = '#fff'; // Inner core
+        ctx.fillStyle = '#fff';
         ctx.fillRect(-player.size/4, -player.size/4, player.size/2, player.size/2);
         ctx.restore();
     }
 
-    // Particles on death
+    // Particles on Death
     if(gameState === 'GAMEOVER') {
-        ctx.shadowBlur = 5;
+        ctx.shadowBlur = 8;
         for(let p of particles) {
             if(p.life > 0) {
                 p.vy += 0.5; p.x += p.vx; p.y += p.vy; p.life -= 0.02;
@@ -345,12 +393,12 @@ function draw() {
 
     ctx.restore();
 
-    // Start screen text
+    // Start Screen
     if(gameState === 'START') {
-        ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0,0,800,440);
-        ctx.fillStyle = '#0ff'; ctx.font = '24px Orbitron'; ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0,0,800,440);
+        ctx.fillStyle = '#0ff'; ctx.font = '22px Orbitron'; ctx.textAlign = 'center';
         ctx.shadowBlur = 10; ctx.shadowColor = '#0ff';
-        ctx.fillText("CLICK OR PRESS SPACE TO START", 400, 220);
+        ctx.fillText("CLICK OR PRESS SPACE TO RUN", 400, 220);
         ctx.textAlign = 'left';
     }
 }
@@ -361,7 +409,6 @@ function loop() {
     requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-
 </script>
 </body>
 </html>
