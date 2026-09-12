@@ -5,339 +5,229 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quick REFLEX Game ⚡</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
-
-        * {
-            box-sizing: border-box;
-            user-select: none; /* Prevents text highlighting during fast clicks */
-            -webkit-user-drag: none;
+        * { 
+            box-sizing: border-box; 
+            user-select: none; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
         }
-
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Nunito', sans-serif;
-            background-color: #ffdcb5; /* Soft peach from the image inspiration */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            transition: background-color 0.4s ease;
-            color: #333;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            color: #333;
-            margin-bottom: 20px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            text-shadow: 1px 1px 0px #fff;
-        }
-
-        /* Main Clickable Area */
-        #play-area {
-            width: 90%;
-            max-width: 600px;
-            height: 300px;
-            background-color: #ffffff;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.1s ease-out;
-            padding: 20px;
-        }
-
-        #play-area:active {
-            transform: scale(0.98); /* Satisfying click feedback */
-        }
-
-        #instruction {
-            font-size: 2.5rem;
-            font-weight: 900;
-            margin: 0;
-            pointer-events: none;
-        }
-
-        #sub-instruction {
-            font-size: 1.2rem;
-            margin-top: 10px;
-            opacity: 0.8;
-            pointer-events: none;
-        }
-
-        /* Stats Panel */
-        .stats-panel {
-            background: #ffffff;
-            margin-top: 30px;
-            padding: 20px 30px;
-            border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-            text-align: center;
-            width: 90%;
-            max-width: 400px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-            font-size: 0.9rem;
-            color: #666;
-            font-weight: 700;
-        }
-
-        .stat-value {
-            font-size: 1.5rem;
-            color: #333;
-            font-weight: 900;
-        }
-
-        #status-text {
-            font-weight: 700;
-            color: #888;
-            font-size: 1.1rem;
-        }
-
-        /* Controls */
-        .controls {
-            display: flex;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .btn {
-            border: none;
-            padding: 12px 30px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            font-family: inherit;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-            transition: all 0.2s;
-            color: #fff;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn:active {
-            transform: translateY(1px);
-        }
-
-        .btn-start { background-color: #4caf50; }
-        .btn-start:hover { background-color: #43a047; }
         
-        .btn-reset { background-color: #f44336; }
-        .btn-reset:hover { background-color: #e53935; }
+        body { 
+            margin: 0; 
+            background-color: #fcdbd3; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            color: #333;
+            position: relative; /* Needed for absolute positioning of back arrow */
+        }
+        
+        /* Top Left Back Arrow */
+        .back-arrow {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #333;
+            transition: transform 0.2s, color 0.2s;
+            z-index: 100;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .back-arrow:hover {
+            transform: scale(1.1);
+            color: #f44336;
+        }
 
+        h1 { 
+            font-size: 2.5rem; 
+            letter-spacing: 2px; 
+            text-transform: uppercase; 
+            margin-bottom: 20px; 
+        }
+        
+        .game-board {
+            background: #ffffff; 
+            width: 100%; 
+            max-width: 800px; 
+            padding: 40px; 
+            border-radius: 10px; 
+            display: flex; 
+            justify-content: center; 
+            margin-bottom: 20px;
+        }
+        
+        .grid {
+            display: grid; 
+            grid-template-columns: repeat(3, 100px); 
+            grid-gap: 15px;
+        }
+        
+        .cell {
+            width: 100px; 
+            height: 100px; 
+            background-color: #ececec; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: background-color 0.1s;
+        }
+        
+        .cell.active { 
+            background-color: #ffd900; 
+            box-shadow: 0 0 15px #ffd900; 
+        }
+        
+        .stats-panel {
+            background: #ffffff; 
+            padding: 20px 40px; 
+            border-radius: 10px; 
+            text-align: center; 
+            margin-bottom: 20px; 
+            font-weight: 500; 
+            font-size: 1.1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .stats-panel p { margin: 5px 0; }
+        
+        .controls { display: flex; gap: 15px; }
+        
+        .btn {
+            padding: 10px 25px; 
+            border: none; 
+            border-radius: 5px; 
+            font-weight: bold; 
+            font-size: 1rem; 
+            cursor: pointer; 
+            color: #333; 
+            transition: transform 0.1s;
+        }
+        
+        .btn:active { transform: scale(0.95); }
+        .btn-start { background-color: #4CAF50; color: white; }
+        .btn-pause { background-color: #FFB300; color: white; }
+        .btn-back { background-color: #81D4FA; }
+        .btn-reset { background-color: #69F0AE; }
     </style>
 </head>
 <body>
 
+    <!-- Back Arrow to Hub -->
+    <a href="index.html" class="back-arrow" title="Back to Hub">
+        <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+    </a>
+
     <h1>REFLEX GAME ⚡</h1>
 
-    <!-- Central Interactive Box -->
-    <div id="play-area">
-        <h2 id="instruction">Click Start Below</h2>
-        <p id="sub-instruction">When the area turns green, click it as fast as you can!</p>
-    </div>
-
-    <!-- Scoreboard and Feedback -->
-    <div class="stats-panel">
-        <div class="stats-grid">
-            <div class="stat-item">
-                Last Reaction
-                <span id="last-time" class="stat-value">-- ms</span>
-            </div>
-            <div class="stat-item">
-                Best Reaction
-                <span id="best-time" class="stat-value">-- ms</span>
-            </div>
+    <div class="game-board">
+        <div class="grid" id="grid">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
         </div>
-        <div id="status-text">Ready to play</div>
     </div>
 
-    <!-- Buttons -->
+    <div class="stats-panel">
+        <p>Score: <span id="score">0</span></p>
+        <p>Streak: <span id="streak">0</span></p>
+        <p>Last Reaction: <span id="last-reaction">0</span> ms</p>
+        <p>Best Reaction: <span id="best-reaction">--</span> ms</p>
+        <p>Average Reaction: <span id="avg-reaction">--</span> ms</p>
+    </div>
+
     <div class="controls">
-        <button id="start-btn" class="btn btn-start">Start Game</button>
-        <button id="reset-btn" class="btn btn-reset">Reset Stats</button>
+        <button class="btn btn-start" id="btn-start">Start</button>
+        <button class="btn btn-pause" id="btn-pause">Pause</button>
+        <button class="btn btn-back" onclick="window.location.href='index.html'">Back</button>
+        <button class="btn btn-reset" id="btn-reset">Reset</button>
     </div>
 
     <script>
-        // Game Logic State Variables
-        let state = 'IDLE'; // States: IDLE, WAITING, READY, RESULT
-        let timeoutId = null;
-        let startTime = 0;
-        let bestTime = Infinity;
+        const cells = document.querySelectorAll('.cell');
+        let isPlaying = false;
+        let activeIndex = -1;
+        let spawnTime = 0;
+        let timerId = null;
 
-        // DOM Elements
-        const playArea = document.getElementById('play-area');
-        const instruction = document.getElementById('instruction');
-        const subInstruction = document.getElementById('sub-instruction');
-        const lastTimeEl = document.getElementById('last-time');
-        const bestTimeEl = document.getElementById('best-time');
-        const statusText = document.getElementById('status-text');
-        const startBtn = document.getElementById('start-btn');
-        const resetBtn = document.getElementById('reset-btn');
+        let stats = { score: 0, streak: 0, last: 0, best: Infinity, totalTime: 0 };
 
-        // Audio Context for Beep Sound (No external files needed)
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-        function playBeep() {
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(800, audioCtx.currentTime); // High pitch beep
-            
-            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            
-            oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.1);
+        function updateUI() {
+            document.getElementById('score').innerText = stats.score;
+            document.getElementById('streak').innerText = stats.streak;
+            document.getElementById('last-reaction').innerText = stats.last;
+            document.getElementById('best-reaction').innerText = stats.best === Infinity ? '--' : stats.best;
+            document.getElementById('avg-reaction').innerText = stats.score > 0 ? Math.round(stats.totalTime / stats.score) : '--';
         }
 
-        // Start Game Flow
-        function startGame() {
-            if (state === 'WAITING' || state === 'READY') return;
-
-            // Initialize audio on user interaction
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-
-            state = 'WAITING';
-            startBtn.innerText = "Try Again";
+        function spawnTarget() {
+            if (!isPlaying) return;
+            if (activeIndex !== -1) cells[activeIndex].classList.remove('active');
             
-            // Visual feedback for waiting
-            playArea.style.backgroundColor = '#f44336'; // Red
-            playArea.style.color = '#ffffff';
-            instruction.innerText = 'Wait for Green...';
-            subInstruction.innerText = 'Do not click yet!';
-            statusText.innerText = 'Focus...';
-            document.body.style.backgroundColor = '#ffdcb5'; // Reset background
-
-            // Set random delay between 2 and 5 seconds
-            const delay = Math.floor(Math.random() * 3000) + 2000;
-            
-            timeoutId = setTimeout(triggerSignal, delay);
+            activeIndex = Math.floor(Math.random() * 9);
+            cells[activeIndex].classList.add('active');
+            spawnTime = performance.now();
         }
 
-        // Trigger the visual/audio cue
-        function triggerSignal() {
-            state = 'READY';
-            playArea.style.backgroundColor = '#4caf50'; // Green
-            instruction.innerText = 'CLICK NOW!';
-            subInstruction.innerText = '';
-            statusText.innerText = 'Go Go Go!';
-            
-            playBeep(); // Trigger sound effect
-            startTime = performance.now(); // Start precision timer
-        }
+        cells.forEach(cell => {
+            cell.addEventListener('mousedown', (e) => {
+                if (!isPlaying) return;
+                const clickedIndex = parseInt(e.target.getAttribute('data-index'));
 
-        // Handle clicking on the big game area
-        function handleAreaClick() {
-            if (state === 'WAITING') {
-                // Clicked too early penalty
-                clearTimeout(timeoutId);
-                state = 'IDLE';
-                
-                playArea.style.backgroundColor = '#ffffff';
-                playArea.style.color = '#333';
-                instruction.innerText = 'Too Soon!';
-                subInstruction.innerText = 'You clicked before green.';
-                statusText.innerText = 'Penalty! Try again.';
-                
-                // Penalty background theme
-                document.body.style.backgroundColor = '#ffcdd2'; 
-            } 
-            else if (state === 'READY') {
-                // Successful reaction
-                const endTime = performance.now();
-                const reactionTime = Math.round(endTime - startTime);
-                
-                state = 'RESULT';
-                
-                // Update specific times
-                lastTimeEl.innerText = `${reactionTime} ms`;
-                
-                if (reactionTime < bestTime) {
-                    bestTime = reactionTime;
-                    bestTimeEl.innerText = `${bestTime} ms`;
-                }
-                
-                // Visual feedback in play area
-                playArea.style.backgroundColor = '#ffffff';
-                playArea.style.color = '#333';
-                instruction.innerText = `${reactionTime} ms`;
-                subInstruction.innerText = 'Click "Try Again" to replay';
-                
-                // Theme shift based on performance
-                if (reactionTime < 200) {
-                    document.body.style.backgroundColor = '#ffe082'; // Gold
-                    statusText.innerText = 'Godlike Speed! ⚡';
-                } else if (reactionTime < 300) {
-                    document.body.style.backgroundColor = '#ce93d8'; // Purple
-                    statusText.innerText = 'Awesome Reflexes! 🔥';
-                } else if (reactionTime > 500) {
-                    document.body.style.backgroundColor = '#b0bec5'; // Grey/Slow
-                    statusText.innerText = 'A bit slow... Wake up! 🐢';
+                if (clickedIndex === activeIndex) {
+                    const reactTime = Math.round(performance.now() - spawnTime);
+                    stats.score++;
+                    stats.streak++;
+                    stats.last = reactTime;
+                    stats.totalTime += reactTime;
+                    if (reactTime < stats.best) stats.best = reactTime;
+                    
+                    cells[activeIndex].classList.remove('active');
+                    activeIndex = -1;
+                    updateUI();
+                    
+                    clearTimeout(timerId);
+                    timerId = setTimeout(spawnTarget, Math.random() * 500 + 200);
                 } else {
-                    document.body.style.backgroundColor = '#81d4fa'; // Blue
-                    statusText.innerText = 'Solid Reaction! 👍';
+                    stats.streak = 0;
+                    updateUI();
                 }
-            }
-        }
-
-        // Completely reset the scoreboard
-        function resetStats() {
-            clearTimeout(timeoutId);
-            state = 'IDLE';
-            bestTime = Infinity;
-            lastTimeEl.innerText = '-- ms';
-            bestTimeEl.innerText = '-- ms';
-            
-            startBtn.innerText = "Start Game";
-            instruction.innerText = 'Click Start Below';
-            subInstruction.innerText = 'When the area turns green, click it as fast as you can!';
-            statusText.innerText = 'Stats Reset';
-            
-            playArea.style.backgroundColor = '#ffffff';
-            playArea.style.color = '#333';
-            document.body.style.backgroundColor = '#ffdcb5';
-        }
-
-        // Event Listeners
-        startBtn.addEventListener('click', startGame);
-        resetBtn.addEventListener('click', resetStats);
-        
-        // Touch start added for faster response on mobile devices
-        playArea.addEventListener('mousedown', handleAreaClick);
-        playArea.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Prevent standard mouse events from firing after touch
-            handleAreaClick();
+            });
         });
 
+        document.getElementById('btn-start').addEventListener('click', () => {
+            if (!isPlaying) { 
+                isPlaying = true; 
+                spawnTarget(); 
+            }
+        });
+
+        document.getElementById('btn-pause').addEventListener('click', () => {
+            isPlaying = false;
+            clearTimeout(timerId);
+            if (activeIndex !== -1) cells[activeIndex].classList.remove('active');
+            activeIndex = -1;
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            isPlaying = false;
+            clearTimeout(timerId);
+            if (activeIndex !== -1) cells[activeIndex].classList.remove('active');
+            activeIndex = -1;
+            stats = { score: 0, streak: 0, last: 0, best: Infinity, totalTime: 0 };
+            updateUI();
+        });
     </script>
 </body>
 </html>
