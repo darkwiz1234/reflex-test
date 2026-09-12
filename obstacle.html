@@ -17,9 +17,26 @@
     }
     canvas { display: block; width: 100%; height: 100%; background: linear-gradient(to bottom, #090a0f, #1a1a3a); }
     #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-    .hud { position: absolute; padding: 15px; font-size: 20px; text-shadow: 0 0 10px #0ff; }
-    #progress { top: 10px; left: 10px; }
-    #best { top: 10px; right: 10px; }
+    
+    /* New Progress Bar */
+    #progress-container {
+        position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+        width: 400px; text-align: center;
+    }
+    #progress-bar-bg {
+        width: 100%; height: 10px; background: rgba(255, 255, 255, 0.1);
+        border: 2px solid #0ff; border-radius: 5px; overflow: hidden;
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.3); margin-top: 5px;
+    }
+    #progress-bar-fill {
+        height: 100%; width: 0%; background: #0ff; 
+        box-shadow: 0 0 10px #0ff; transition: width 0.1s linear;
+    }
+    #progress-text { font-size: 18px; color: #0ff; text-shadow: 0 0 8px #0ff; letter-spacing: 2px;}
+    
+    .hud { position: absolute; padding: 15px; font-size: 18px; text-shadow: 0 0 8px #0ff; color: #0ff; }
+    #best { top: 5px; right: 10px; }
+    
     .btn {
         position: absolute; padding: 10px 20px; font-family: 'Orbitron', sans-serif;
         background: #1f2833; border: 2px solid #0ff; color: #0ff; font-size: 16px;
@@ -29,13 +46,14 @@
     .btn:hover { background: #0ff; color: #000; box-shadow: 0 0 20px #0ff; }
     #pauseBtn { bottom: 15px; right: 15px; }
     #resetBtn { bottom: 15px; right: 120px; }
+    
     #message-overlay {
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         display: flex; justify-content: center; align-items: center; flex-direction: column;
-        background: rgba(0, 0, 0, 0.7); display: none; pointer-events: none;
+        background: rgba(0, 0, 0, 0.7); display: none; pointer-events: none; z-index: 10;
     }
     #message-text { font-size: 40px; color: #f0f; text-shadow: 0 0 20px #f0f; margin-bottom: 20px; }
-    .msg-btn { pointer-events: auto; font-size: 20px; }
+    .msg-btn { pointer-events: auto; font-size: 20px; position: relative; }
 </style>
 </head>
 <body>
@@ -43,10 +61,16 @@
 <div id="game-container">
     <canvas id="gameCanvas" width="800" height="440"></canvas>
     <div id="ui-layer">
-        <div id="progress" class="hud">PROGRESS: 0%</div>
+        
+        <div id="progress-container">
+            <div id="progress-text">0%</div>
+            <div id="progress-bar-bg"><div id="progress-bar-fill"></div></div>
+        </div>
+
         <div id="best" class="hud">BEST: 0%</div>
         <button id="resetBtn" class="btn">RESET</button>
         <button id="pauseBtn" class="btn">PAUSE</button>
+        
         <div id="message-overlay">
             <div id="message-text">GAME OVER</div>
             <button id="overlayResetBtn" class="btn msg-btn">TRY AGAIN</button>
@@ -60,7 +84,8 @@
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const uiProgress = document.getElementById('progress');
+const uiProgressText = document.getElementById('progress-text');
+const uiProgressBar = document.getElementById('progress-bar-fill');
 const uiBest = document.getElementById('best');
 const pauseBtn = document.getElementById('pauseBtn');
 const resetBtn = document.getElementById('resetBtn');
@@ -71,12 +96,11 @@ const msgText = document.getElementById('message-text');
 const bgMusic = document.getElementById('sfx-music');
 const hitSound = document.getElementById('sfx-collision');
 
-let gameState = 'START'; // START, PLAYING, PAUSED, GAMEOVER, WIN
+let gameState = 'START'; 
 let bestProgress = localStorage.getItem('objectRunBest') || 0;
 uiBest.innerText = `BEST: ${bestProgress}%`;
 
 // Level Design (Map string) 
-// '#' = Block, '^' = Spike (Ground), 'v' = Spike (Ceiling/Under Platform), '.' = Empty
 const mapGrid = [
     ".....................................................................................................................................................................................................................................................................................................................................................",
     ".....................................................................................................................................................................................................................................................................................................................................................",
@@ -111,13 +135,14 @@ function parseLevel() {
 }
 parseLevel();
 
-let player = { x: 150, y: 320, size: 28, vx: 5.5, vy: 0, gravity: 0.7, jumpForce: -11.5, angle: 0, onGround: false };
+// INCREMENTED jumpForce from -11.5 to -12.3 for a slightly higher/longer jump
+let player = { x: 150, y: 320, size: 28, vx: 5.5, vy: 0, gravity: 0.7, jumpForce: -12.3, angle: 0, onGround: false };
 let cameraX = 0;
 let particles = [];
 let musicStarted = false;
 
 function resetGame() {
-    player = { x: 150, y: 320, size: 28, vx: 5.5, vy: 0, gravity: 0.7, jumpForce: -11.5, angle: 0, onGround: false };
+    player = { x: 150, y: 320, size: 28, vx: 5.5, vy: 0, gravity: 0.7, jumpForce: -12.3, angle: 0, onGround: false };
     cameraX = 0;
     particles = [];
     gameState = 'PLAYING';
@@ -133,7 +158,7 @@ function die() {
     msgText.style.color = "#f0f";
     msgOverlay.style.display = 'flex';
     
-    // Generate particles
+    // Death particles
     for(let i=0; i<20; i++) {
         particles.push({
             x: player.x + player.size/2, y: player.y + player.size/2,
@@ -190,11 +215,10 @@ function update() {
     
     // X Movement & Collision
     player.x += player.vx;
-    let hitX = false;
     for(let b of blocks) {
         if(player.x < b.x + b.w && player.x + player.size > b.x &&
            player.y < b.y + b.h && player.y + player.size > b.y) {
-            die(); return; // Hit side
+            die(); return; 
         }
     }
 
@@ -214,7 +238,7 @@ function update() {
         }
     }
 
-    // Spike Collision (smaller hitbox for fairness)
+    // Spike Collision (forgiving hitbox)
     let pRect = { x: player.x + 4, y: player.y + 4, w: player.size - 8, h: player.size - 8 };
     for(let s of spikes) {
         let sx = s.x + 8, sy = s.type === 'up' ? s.y + 16 : s.y, sw = 24, sh = 24;
@@ -223,17 +247,20 @@ function update() {
         }
     }
 
-    // Rotation
+    // Aerial Rotation
     if(!player.onGround) player.angle += 0.12;
-    else player.angle = Math.round(player.angle / (Math.PI/2)) * (Math.PI/2); // Snap to 90deg
+    else player.angle = Math.round(player.angle / (Math.PI/2)) * (Math.PI/2);
 
     // Camera follow
     cameraX = player.x - 200;
 
-    // Progress update
-    let maxDist = levelWidth - 800;
+    // Progress bar update
+    let maxDist = levelWidth - 800; // Total length minus the screen width
     let progress = Math.min(100, Math.max(0, Math.floor((player.x / maxDist) * 100)));
-    uiProgress.innerText = `PROGRESS: ${progress}%`;
+    
+    uiProgressText.innerText = `${progress}%`;
+    uiProgressBar.style.width = `${progress}%`;
+    
     if(progress > bestProgress) {
         bestProgress = progress;
         localStorage.setItem('objectRunBest', bestProgress);
@@ -246,7 +273,7 @@ function update() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw Grid Background
+    // Background Grid
     ctx.strokeStyle = 'rgba(0, 255, 255, 0.05)';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -258,7 +285,7 @@ function draw() {
     ctx.save();
     ctx.translate(-cameraX, 0);
 
-    // Draw Blocks
+    // Blocks
     ctx.shadowBlur = 10;
     ctx.shadowColor = '#0ff';
     ctx.strokeStyle = '#0ff';
@@ -271,7 +298,7 @@ function draw() {
         }
     }
 
-    // Draw Spikes
+    // Spikes
     ctx.shadowColor = '#f0f';
     ctx.fillStyle = '#f0f';
     for(let s of spikes) {
@@ -290,7 +317,7 @@ function draw() {
         }
     }
 
-    // Draw Player
+    // Player
     if(gameState !== 'GAMEOVER') {
         ctx.shadowColor = '#fff';
         ctx.fillStyle = '#0ff';
@@ -298,12 +325,12 @@ function draw() {
         ctx.translate(player.x + player.size/2, player.y + player.size/2);
         ctx.rotate(player.angle);
         ctx.fillRect(-player.size/2, -player.size/2, player.size, player.size);
-        ctx.fillStyle = '#fff'; // Inner highlight
+        ctx.fillStyle = '#fff'; // Inner core
         ctx.fillRect(-player.size/4, -player.size/4, player.size/2, player.size/2);
         ctx.restore();
     }
 
-    // Draw Particles
+    // Particles on death
     if(gameState === 'GAMEOVER') {
         ctx.shadowBlur = 5;
         for(let p of particles) {
@@ -319,7 +346,7 @@ function draw() {
 
     ctx.restore();
 
-    // Start text overlay
+    // Start screen text
     if(gameState === 'START') {
         ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0,0,800,440);
         ctx.fillStyle = '#0ff'; ctx.font = '24px Orbitron'; ctx.textAlign = 'center';
